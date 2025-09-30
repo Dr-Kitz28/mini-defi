@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\LendingPool.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../prettify.css" />
+    <link rel="stylesheet" href="../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../index.html">all files</a> / <a href="index.html">contracts/</a> LendingPool.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">65.31% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>64/98</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">44.83% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>26/58</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">80% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>12/15</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">61.98% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>75/121</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line medium'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200
+201
+202
+203
+204
+205
+206
+207
+208
+209
+210
+211
+212
+213
+214
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+231
+232
+233
+234
+235
+236
+237
+238
+239
+240
+241
+242
+243
+244
+245
+246
+247
+248
+249
+250
+251
+252
+253
+254
+255
+256
+257
+258
+259
+260
+261
+262
+263
+264
+265
+266
+267
+268
+269
+270
+271
+272
+273
+274
+275
+276
+277
+278
+279
+280
+281
+282
+283
+284
+285
+286</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-yes">4×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-yes">5×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+&nbsp;
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IInterestRateModel} from "./interfaces/IInterestRateModel.sol";
+&nbsp;
+/// @notice Minimal single-asset lending pool with super-simplified accounting.
+/// Users:
+/// - deposit(asset)
+/// - withdraw(asset)
+/// - borrow(asset) up to 66.66% of their deposits (150% collateral requirement)
+/// - repay(asset)
+/// Interest:
+/// - Linear simple interest on each borrower since their last action.
+contract LendingPool {
+    using SafeERC20 for IERC20;
+&nbsp;
+    uint256 private constant PRECISION = 1e18;
+    uint256 private constant COLLATERAL_FACTOR = 666666666666666667; // 66.6666%
+    uint256 private constant LIQUIDATION_BONUS = 1050000000000000000; // 1.05x seize incentive
+&nbsp;
+    IERC20 public immutable asset; // single ERC20 asset
+    IInterestRateModel public immutable irm; // interest rate model
+&nbsp;
+    uint256 public totalDeposits; // pool total deposits
+    uint256 public totalBorrows; // pool total borrows (principal only)
+    uint256 public totalShares; // total shares issued for deposited collateral
+&nbsp;
+    mapping(address =&gt; uint256) public deposits; // user deposit balance
+    mapping(address =&gt; uint256) public shares; // user shares balance
+&nbsp;
+    struct Borrow {
+        uint256 principal; // what user currently owes as principal
+        uint256 timestamp; // last time we updated their loan
+    }
+    mapping(address =&gt; Borrow) public borrows;
+&nbsp;
+    event Deposit(address indexed user, uint256 amount);
+    event Withdraw(address indexed user, uint256 amount);
+    event Borrowed(address indexed user, uint256 amount);
+    event Repaid(address indexed user, uint256 amount);
+    event InterestAccrued(address indexed user, uint256 interest);
+    event Liquidated(
+        address indexed liquidator,
+        address indexed borrower,
+        uint256 repaidAmount,
+        uint256 collateralSeized
+    );
+&nbsp;
+        error ZeroAmount();
+        error InsufficientDeposit();
+        error InsufficientLiquidity();
+        error BorrowLimitExceeded();
+        error BorrowerHealthy();
+        error NothingToRepay();
+&nbsp;
+    constructor(address _asset, address _irm) {
+        asset = IERC20(_asset);
+        irm = IInterestRateModel(_irm);
+    }
+&nbsp;
+    // ===== View helpers =====
+&nbsp;
+    function getSharesForAmount(uint256 amount) public view returns (uint256) {
+        if (totalDeposits == 0) {
+            return amount;
+        }
+        return (amount * totalShares) / totalDeposits;
+    }
+&nbsp;
+    function getAmountForShares(uint256 _shares) public view returns (uint256) {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (totalShares == 0) {
+<span class="cstat-no" title="statement not covered" >            return _shares;</span>
+        }
+        return (_shares * totalDeposits) / totalShares;
+    }
+&nbsp;
+    function utilization() public view returns (uint256) {
+        uint256 totalAsset = asset.balanceOf(address(this));
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (totalAsset == 0) <span class="cstat-no" title="statement not covered" >return 0;</span>
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (totalBorrows &gt; totalAsset) return 1e18;
+<span class="cstat-no" title="statement not covered" >        return (totalBorrows * 1e18) / totalAsset;</span>
+    }
+&nbsp;
+    function availableLiquidity() public view returns (uint256) {
+        return asset.balanceOf(address(this));
+    }
+&nbsp;
+    /// max a user can newly borrow now (ignores interest until next action)
+    function maxBorrowable(address user) public view returns (uint256) {
+        uint256 collateralValue = deposits[user];
+        uint256 borrowLimit = (collateralValue * COLLATERAL_FACTOR) / PRECISION;
+        uint256 debt = currentDebt(user);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (debt &gt;= borrowLimit) <span class="cstat-no" title="statement not covered" >return 0;</span>
+        return borrowLimit - debt;
+    }
+&nbsp;
+    function currentDebt(address user) public view returns (uint256) {
+        Borrow memory b = borrows[user];
+        if (b.principal == 0) return 0;
+&nbsp;
+        uint256 elapsed = block.timestamp - b.timestamp;
+        if (elapsed == 0) return b.principal;
+&nbsp;
+        uint256 ratePerSecond = irm.getBorrowRatePerSecond(utilization());
+        uint256 interest = (b.principal * ratePerSecond * elapsed) / PRECISION;
+        return b.principal + interest;
+    }
+&nbsp;
+    function deposit(uint256 amount) external {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (amount == 0) revert ZeroAmount();
+&nbsp;
+        uint256 newShares = getSharesForAmount(amount);
+&nbsp;
+        totalDeposits += amount;
+        totalShares += newShares;
+        deposits[msg.sender] += amount;
+        shares[msg.sender] += newShares;
+&nbsp;
+        asset.safeTransferFrom(msg.sender, address(this), amount);
+&nbsp;
+        emit Deposit(msg.sender, amount);
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function withdraw(uint256 amount) external {</span>
+<span class="cstat-no" title="statement not covered" >        if (amount == 0) revert ZeroAmount();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 userDeposit = deposits[msg.sender];</span>
+<span class="cstat-no" title="statement not covered" >        if (userDeposit &lt; amount) revert InsufficientDeposit();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 newDepositBalance = userDeposit - amount;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        if (!isHealthy(msg.sender)) revert BorrowLimitExceeded();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 sharesToBurn = getSharesForAmount(amount);</span>
+&nbsp;
+        deposits[msg.sender] = newDepositBalance;
+        totalDeposits -= amount;
+        shares[msg.sender] -= sharesToBurn;
+        totalShares -= sharesToBurn;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        asset.safeTransfer(msg.sender, amount)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        emit Withdraw(msg.sender, amount);</span>
+    }
+&nbsp;
+    function borrow(uint256 amount) external {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (amount == 0) revert ZeroAmount();
+&nbsp;
+        _accrueInterest(msg.sender);
+&nbsp;
+        Borrow storage b = borrows[msg.sender];
+        uint256 newDebt = b.principal + amount;
+&nbsp;
+        uint256 collateralValue = deposits[msg.sender];
+        uint256 borrowLimit = (collateralValue * COLLATERAL_FACTOR) / PRECISION;
+        if (newDebt &gt; borrowLimit) revert BorrowLimitExceeded();
+&nbsp;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (availableLiquidity() &lt; amount) revert InsufficientLiquidity();
+&nbsp;
+        b.principal = newDebt;
+        b.timestamp = block.timestamp;
+        totalBorrows += amount;
+&nbsp;
+        asset.safeTransfer(msg.sender, amount);
+&nbsp;
+        emit Borrowed(msg.sender, amount);
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function repay(uint256 amount) external {</span>
+<span class="cstat-no" title="statement not covered" >        if (amount == 0) revert ZeroAmount();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 principalBefore = borrows[msg.sender].principal;</span>
+<span class="cstat-no" title="statement not covered" >        _accrueInterest(msg.sender)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        Borrow storage b = borrows[msg.sender];</span>
+<span class="cstat-no" title="statement not covered" >        uint256 debt = b.principal;</span>
+<span class="cstat-no" title="statement not covered" >        if (debt == 0) revert NothingToRepay();</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 repayAmount = amount &gt; debt ? debt : amount;</span>
+&nbsp;
+        b.principal = debt - repayAmount;
+<span class="cstat-no" title="statement not covered" >        if (b.principal == 0) {</span>
+            b.timestamp = 0;
+        } else {
+            b.timestamp = block.timestamp;
+        }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 principalRepaid = principalBefore - b.principal;</span>
+        totalBorrows -= principalRepaid;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        asset.safeTransferFrom(msg.sender, address(this), repayAmount)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        emit Repaid(msg.sender, repayAmount);</span>
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function repayAll() external {</span>
+<span class="cstat-no" title="statement not covered" >        _accrueInterest(msg.sender)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        Borrow storage b = borrows[msg.sender];</span>
+<span class="cstat-no" title="statement not covered" >        uint256 debt = b.principal;</span>
+<span class="cstat-no" title="statement not covered" >        if (debt == 0) revert NothingToRepay();</span>
+&nbsp;
+        b.principal = 0;
+        b.timestamp = 0;
+&nbsp;
+        totalBorrows -= debt;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        asset.safeTransferFrom(msg.sender, address(this), debt)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        emit Repaid(msg.sender, debt);</span>
+    }
+&nbsp;
+    function liquidate(address borrower, uint256 repayAmount) external {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (repayAmount == 0) revert ZeroAmount();
+&nbsp;
+        _accrueInterest(borrower);
+&nbsp;
+        Borrow storage b = borrows[borrower];
+        uint256 debt = b.principal;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (debt == 0) revert NothingToRepay();
+&nbsp;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (isHealthy(borrower)) revert BorrowerHealthy();
+&nbsp;
+        uint256 actualRepay = repayAmount &gt; debt ? <span class="missing-if-branch" title="if path not taken" >I</span>debt : repayAmount;
+&nbsp;
+        // Seize collateral
+        uint256 seizeShares = (actualRepay * LIQUIDATION_BONUS) / PRECISION;
+        uint256 borrowerShares = shares[borrower];
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (seizeShares &gt; borrowerShares) {
+            seizeShares = borrowerShares;
+        }
+        uint256 seizeAmount = getAmountForShares(seizeShares);
+&nbsp;
+&nbsp;
+        b.principal = debt - actualRepay;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (b.principal == 0) {
+            b.timestamp = 0;
+        } else {
+            b.timestamp = block.timestamp;
+        }
+        totalBorrows -= actualRepay;
+&nbsp;
+        shares[borrower] -= seizeShares;
+        totalShares -= seizeShares;
+        deposits[borrower] -= seizeAmount;
+        totalDeposits -= seizeAmount;
+&nbsp;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        asset.safeTransferFrom(msg.sender, address(this), actualRepay)</span>;
+<span class="cstat-no" title="statement not covered" >        asset.safeTransfer(msg.sender, seizeAmount)</span>;
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        emit Liquidated(msg.sender, borrower, actualRepay, seizeAmount);</span>
+    }
+&nbsp;
+    // ===== Internal =====
+&nbsp;
+    function _accrueInterest(address user) internal {
+        Borrow storage b = borrows[user];
+        if (b.principal == 0) return;
+&nbsp;
+        uint256 elapsed = block.timestamp - b.timestamp;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (elapsed == 0) <span class="cstat-no" title="statement not covered" >return;</span>
+&nbsp;
+        uint256 ratePerSecond = irm.getBorrowRatePerSecond(utilization());
+        uint256 interest = (b.principal * ratePerSecond * elapsed) / PRECISION;
+&nbsp;
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (interest &gt; 0) {
+            b.principal += interest;
+            emit InterestAccrued(user, interest);
+        }
+        // always update timestamp
+        b.timestamp = block.timestamp;
+    }
+&nbsp;
+    function isHealthy(address user) public view returns (bool) {
+        uint256 debt = currentDebt(user);
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (debt == 0) <span class="cstat-no" title="statement not covered" >return true;</span>
+&nbsp;
+        uint256 collateralValue = deposits[user];
+        uint256 borrowLimit = (collateralValue * COLLATERAL_FACTOR) / PRECISION;
+        return debt &lt;= borrowLimit;
+    }
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Sep 30 2025 07:45:03 GMT+0530 (India Standard Time)
+</div>
+</div>
+<script src="../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../sorter.js"></script>
+</body>
+</html>

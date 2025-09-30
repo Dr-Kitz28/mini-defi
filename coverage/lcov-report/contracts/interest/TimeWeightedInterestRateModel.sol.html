@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>Code coverage report for contracts\interest\TimeWeightedInterestRateModel.sol</title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style type='text/css'>
+        .coverage-summary .sorter {
+            background-image: url(../../sort-arrow-sprite.png);
+        }
+    </style>
+</head>
+<body>
+<div class='wrapper'>
+  <div class='pad1'>
+    <h1>
+      <a href="../../index.html">all files</a> / <a href="index.html">contracts/interest/</a> TimeWeightedInterestRateModel.sol
+    </h1>
+    <div class='clearfix'>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">31.82% </span>
+        <span class="quiet">Statements</span>
+        <span class='fraction'>14/44</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">23.08% </span>
+        <span class="quiet">Branches</span>
+        <span class='fraction'>12/52</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">71.43% </span>
+        <span class="quiet">Functions</span>
+        <span class='fraction'>5/7</span>
+      </div>
+      <div class='fl pad1y space-right2'>
+        <span class="strong">41.38% </span>
+        <span class="quiet">Lines</span>
+        <span class='fraction'>24/58</span>
+      </div>
+    </div>
+  </div>
+  <div class='status-line low'></div>
+<pre><table class="coverage">
+<tr><td class="line-count quiet">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
+80
+81
+82
+83
+84
+85
+86
+87
+88
+89
+90
+91
+92
+93
+94
+95
+96
+97
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187</td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-yes">2×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-yes">6×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-yes">1×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3×</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+&nbsp;
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IInterestRateModel} from "../interfaces/IInterestRateModel.sol";
+&nbsp;
+/// @notice Adaptive utilization-sensitive rate model inspired by Fraxlend's time-weighted design.
+/// @dev The model keeps a mutable APR state that nudges upward when utilization stays above the
+///      target band, downward when below, and reverts toward a neutral APR when healthy.
+contract TimeWeightedInterestRateModel is Ownable, IInterestRateModel {
+    uint256 public constant SECONDS_PER_YEAR = 365 days;
+    uint256 private constant MAX_ADJUSTMENT_RATE = 5e15; // 0.5% APR change per second at full overshoot
+&nbsp;
+    address public pool; // lending pool allowed to drive updates
+&nbsp;
+    uint256 public minAPR;       // 1e18 annualized APR lower bound
+    uint256 public maxAPR;       // 1e18 annualized APR upper bound
+    uint256 public neutralAPR;   // 1e18 APR that the system reverts to inside the target band
+    uint256 public adjustmentRatePerSecond; // 1e18 APR delta per second at 100% overshoot
+    uint256 public lowerUtilization; // 1e18 utilization floor of healthy band
+    uint256 public upperUtilization; // 1e18 utilization ceiling of healthy band
+&nbsp;
+    uint256 public currentAPR;   // 1e18 APR that accrues interest
+    uint256 public lastUpdate;   // timestamp of latest adjustment
+&nbsp;
+    event PoolConfigured(address indexed pool);
+    event ParametersUpdated(
+        uint256 minAPR,
+        uint256 maxAPR,
+        uint256 neutralAPR,
+        uint256 adjustmentRatePerSecond,
+        uint256 lowerUtilization,
+        uint256 upperUtilization
+    );
+    event RateAdjusted(uint256 utilization, uint256 newAPR, uint256 timestamp);
+&nbsp;
+    error PoolAlreadySet();
+    error PoolNotConfigured();
+    error UnauthorizedUpdater();
+    error InvalidBounds();
+    error InvalidAdjustmentRate();
+&nbsp;
+    constructor(
+        uint256 _minAPR,
+        uint256 _maxAPR,
+        uint256 _neutralAPR,
+        uint256 _adjustmentRatePerSecond,
+        uint256 _lowerUtilization,
+        uint256 _upperUtilization,
+        address admin
+    ) Ownable(admin) {
+        _setParameters(
+            _minAPR,
+            _maxAPR,
+            _neutralAPR,
+            _adjustmentRatePerSecond,
+            _lowerUtilization,
+            _upperUtilization
+        );
+        currentAPR = neutralAPR;
+        lastUpdate = block.timestamp;
+    }
+&nbsp;
+    /// @notice One-time hook invoked post-deployment to anchor the pool address.
+    function setPool(address _pool) external {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (pool != address(0)) revert PoolAlreadySet();
+        <span class="missing-if-branch" title="else path not taken" >E</span>require(_pool != address(0), "pool zero");
+        pool = _pool;
+        lastUpdate = block.timestamp;
+        emit PoolConfigured(_pool);
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function getBorrowRatePerSecond(uint256) external view override returns (uint256) {</span>
+<span class="cstat-no" title="statement not covered" >        if (currentAPR == 0) <span class="cstat-no" title="statement not covered" >return 0;</span></span>
+<span class="cstat-no" title="statement not covered" >        return currentAPR / SECONDS_PER_YEAR;</span>
+    }
+&nbsp;
+    function updateBorrowRate(uint256) external override {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (pool == address(0)) revert PoolNotConfigured();
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (msg.sender != pool) revert UnauthorizedUpdater();
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 util = ILendingPoolLike(pool).utilization();</span>
+<span class="cstat-no" title="statement not covered" >        _adjust(util)</span>;
+    }
+&nbsp;
+    function setParameters(
+        uint256 _minAPR,
+        uint256 _maxAPR,
+        uint256 _neutralAPR,
+        uint256 _adjustmentRatePerSecond,
+        uint256 _lowerUtilization,
+        uint256 _upperUtilization
+    ) external onlyOwner {
+        _setParameters(
+            _minAPR,
+            _maxAPR,
+            _neutralAPR,
+            _adjustmentRatePerSecond,
+            _lowerUtilization,
+            _upperUtilization
+        );
+&nbsp;
+        // Clamp the live APR into the new bounds immediately
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (currentAPR &lt; minAPR) currentAPR = minAPR;
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (currentAPR &gt; maxAPR) currentAPR = maxAPR;
+    }
+&nbsp;
+<span class="fstat-no" title="function not covered" >    function _adjust(uint256 utilization) internal {</span>
+<span class="cstat-no" title="statement not covered" >        uint256 previousUpdate = lastUpdate;</span>
+<span class="cstat-no" title="statement not covered" >        uint256 elapsed = block.timestamp - previousUpdate;</span>
+<span class="cstat-no" title="statement not covered" >        if (elapsed == 0) <span class="cstat-no" title="statement not covered" >return;</span></span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        uint256 apr = currentAPR;</span>
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        if (utilization &gt; upperUtilization) {</span>
+<span class="cstat-no" title="statement not covered" >            uint256 overshoot = utilization - upperUtilization;</span>
+<span class="cstat-no" title="statement not covered" >            uint256 step = (adjustmentRatePerSecond * overshoot) / 1e18;</span>
+<span class="cstat-no" title="statement not covered" >            uint256 delta = step * elapsed;</span>
+            apr += delta;
+        } else <span class="cstat-no" title="statement not covered" >if (utilization &lt; lowerUtilization) {</span>
+<span class="cstat-no" title="statement not covered" >            uint256 deficit = lowerUtilization - utilization;</span>
+<span class="cstat-no" title="statement not covered" >            uint256 step = (adjustmentRatePerSecond * deficit) / 1e18;</span>
+<span class="cstat-no" title="statement not covered" >            uint256 delta = step * elapsed;</span>
+<span class="cstat-no" title="statement not covered" >            if (delta &gt;= apr || apr - delta &lt; minAPR) {</span>
+                apr = minAPR;
+            } else {
+                apr -= delta;
+            }
+        } else {
+<span class="cstat-no" title="statement not covered" >            if (apr &gt; neutralAPR) {</span>
+<span class="cstat-no" title="statement not covered" >                uint256 diff = apr - neutralAPR;</span>
+<span class="cstat-no" title="statement not covered" >                uint256 delta = (adjustmentRatePerSecond * elapsed) / 4;</span>
+<span class="cstat-no" title="statement not covered" >                if (delta &gt; diff) delta = diff;</span>
+                apr -= delta;
+            } else <span class="cstat-no" title="statement not covered" >if (apr &lt; neutralAPR) {</span>
+<span class="cstat-no" title="statement not covered" >                uint256 diff = neutralAPR - apr;</span>
+<span class="cstat-no" title="statement not covered" >                uint256 delta = (adjustmentRatePerSecond * elapsed) / 4;</span>
+<span class="cstat-no" title="statement not covered" >                if (delta &gt; diff) delta = diff;</span>
+                apr += delta;
+            }
+        }
+&nbsp;
+<span class="cstat-no" title="statement not covered" >        if (apr &gt; maxAPR) apr = maxAPR;</span>
+<span class="cstat-no" title="statement not covered" >        if (apr &lt; minAPR) apr = minAPR;</span>
+&nbsp;
+        currentAPR = apr;
+        lastUpdate = block.timestamp;
+<span class="cstat-no" title="statement not covered" >        emit RateAdjusted(utilization, apr, block.timestamp);</span>
+    }
+&nbsp;
+    function _setParameters(
+        uint256 _minAPR,
+        uint256 _maxAPR,
+        uint256 _neutralAPR,
+        uint256 _adjustmentRatePerSecond,
+        uint256 _lowerUtilization,
+        uint256 _upperUtilization
+    ) internal {
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (_minAPR &gt; _maxAPR) revert InvalidBounds();
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (_neutralAPR &lt; _minAPR || _neutralAPR &gt; _maxAPR) revert InvalidBounds();
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (_upperUtilization &gt; 1e18 || _lowerUtilization &gt; _upperUtilization) revert InvalidBounds();
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (_adjustmentRatePerSecond == 0 || _adjustmentRatePerSecond &gt; MAX_ADJUSTMENT_RATE) {
+            revert InvalidAdjustmentRate();
+        }
+&nbsp;
+        minAPR = _minAPR;
+        maxAPR = _maxAPR;
+        neutralAPR = _neutralAPR;
+        adjustmentRatePerSecond = _adjustmentRatePerSecond;
+        lowerUtilization = _lowerUtilization;
+        upperUtilization = _upperUtilization;
+&nbsp;
+        emit ParametersUpdated(
+            _minAPR,
+            _maxAPR,
+            _neutralAPR,
+            _adjustmentRatePerSecond,
+            _lowerUtilization,
+            _upperUtilization
+        );
+    }
+}
+&nbsp;
+interface ILendingPoolLike {
+    function utilization() external view returns (uint256);
+}
+&nbsp;</pre></td></tr>
+</table></pre>
+<div class='push'></div><!-- for sticky footer -->
+</div><!-- /wrapper -->
+<div class='footer quiet pad2 space-top1 center small'>
+  Code coverage
+  generated by <a href="http://istanbul-js.org/" target="_blank">istanbul</a> at Tue Sep 30 2025 07:45:03 GMT+0530 (India Standard Time)
+</div>
+</div>
+<script src="../../prettify.js"></script>
+<script>
+window.onload = function () {
+        if (typeof prettyPrint === 'function') {
+            prettyPrint();
+        }
+};
+</script>
+<script src="../../sorter.js"></script>
+</body>
+</html>
