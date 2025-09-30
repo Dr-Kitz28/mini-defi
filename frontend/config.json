@@ -1,0 +1,9 @@
+{
+  "defaultChainId": "31337",
+  "networks": {
+    "31337": {
+      "token": "",
+      "pool": ""
+    }
+  }
+}

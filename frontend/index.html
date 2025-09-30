@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mini DeFi Lending Pool</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Mini DeFi Lending Pool</h1>
+        <p>
+          Connect your wallet, paste the deployed contract addresses, and interact with the
+          lending pool. All values are in the pool's ERC-20 token units.
+        </p>
+        <button id="connectWallet">Connect Wallet</button>
+        <p id="accountInfo" class="muted"></p>
+      </header>
+
+      <section class="card">
+        <h2>Configuration</h2>
+        <label>
+          Pool contract address
+          <input id="poolAddress" type="text" placeholder="0x..." />
+        </label>
+        <label>
+          Token contract address
+          <input id="tokenAddress" type="text" placeholder="0x..." />
+        </label>
+        <button id="refreshStats">Load Stats</button>
+        <div id="stats" class="muted"></div>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <h3>Deposit</h3>
+          <label>
+            Amount
+            <input id="depositAmount" type="number" min="0" step="0.0001" />
+          </label>
+          <button id="depositBtn">Deposit</button>
+        </div>
+        <div class="card">
+          <h3>Withdraw</h3>
+          <label>
+            Amount
+            <input id="withdrawAmount" type="number" min="0" step="0.0001" />
+          </label>
+          <button id="withdrawBtn">Withdraw</button>
+        </div>
+        <div class="card">
+          <h3>Borrow</h3>
+          <label>
+            Amount
+            <input id="borrowAmount" type="number" min="0" step="0.0001" />
+          </label>
+          <button id="borrowBtn">Borrow</button>
+        </div>
+        <div class="card">
+          <h3>Repay</h3>
+          <label>
+            Amount
+            <input id="repayAmount" type="number" min="0" step="0.0001" />
+          </label>
+          <button id="repayBtn">Repay</button>
+          <button id="repayAllBtn" class="secondary">Repay All</button>
+        </div>
+        <div class="card">
+          <h3>Liquidate</h3>
+          <label>
+            Borrower address
+            <input id="liquidateAddress" type="text" placeholder="0x..." />
+          </label>
+          <label>
+            Repay amount
+            <input id="liquidateAmount" type="number" min="0" step="0.0001" />
+          </label>
+          <button id="liquidateBtn">Liquidate</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Status</h2>
+        <pre id="log"></pre>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
