@@ -3,6 +3,7 @@ node_modules
 
 # Research files
 ResearchReference/
+research_reference.txt
 
 # TypeChain files
 /typechain
