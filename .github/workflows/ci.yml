@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Install dependencies
+        run: npm ci
+      - name: Run merkle-heavy tests (increased heap)
+        run: NODE_OPTIONS='--max-old-space-size=4096' npm run test:merkle
+      - name: Run remaining tests
+        run: npm test
+      # Note: If CI hits OOM on the full test run, consider splitting the suite
+      # more granularly (run heavy tests separately) or increasing the Node heap
+      # further for specific steps.

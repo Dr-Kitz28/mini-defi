@@ -4,13 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "test:merkle": "node --max-old-space-size=4096 ./node_modules/.bin/hardhat test test/bridge/GatewayLightClientMerkle.js test/bridge/GatewayLightClientMerkleEdgeCases.js",
+    "demo": "node relayer/demo.js",
+    "demo:fast": "node relayer/demo.js --fast=true",
+    "demo:fast:rpc": "cross-env RPC_URL=http://127.0.0.1:8545 ACCOUNTS=0,1,2,3 node relayer/demo.js --fast=true"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "hardhat": "^2.26.3"
+    "hardhat": "^2.26.3",
+    "cross-env": "^7.0.3"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",

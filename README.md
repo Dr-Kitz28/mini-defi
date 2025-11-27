@@ -41,6 +41,77 @@ Run the test suite to verify everything is working correctly:
 npm test
 ```
 
+## Multi-Chain Architecture (GatewayV3)
+
+This update introduces a hybrid cross-chain layer:
+
+- **ChainRegistry.sol** — allowlists supported chains & tokens (no meme-coins by default).
+- **GatewayV3.sol** — token bridging + general message passing secured by a quorum of relayers (via `RelayerManager`).
+- **MessageLib.sol** — canonical hashing for off-chain signature aggregation.
+- **relayer/src/multiChainRelayer.js** — multi-chain EVM relayer with placeholders for Bitcoin (tSS/MPC) and Cosmos (IBC).
+- **scripts/deploy-v3.js** — one-shot deployer for the new components.
+
+### Quick start
+
+1. Deploy contracts on two EVM testnets:
+
+```bash
+npx hardhat run scripts/deploy-v3.js --network sepolia
+npx hardhat run scripts/deploy-v3.js --network amoy
+
+Add both gateways & wrapped-token map to relayer/multi-chain.config.json.
+
+Run 2+ relayers with different RELAYER_PK values:
+
+cd relayer
+RELAYER_PK=<privkey1> node src/multiChainRelayer.js
+RELAYER_PK=<privkey2> node src/multiChainRelayer.js
+
+
+Call bridgeToken or sendMessage on the source chain; relayers will aggregate signatures and submit mintWrapped / executeMessage on the destination.
+
+If you're running the local in-process demo from this repository, the sample GatewayV3 and WrappedToken addresses (from an example in-process deploy) are:
+
+- GatewayV3: 0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9
+- WrappedToken: 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
+
+To wire the frontend and run a quick local end-to-end demo:
+
+1. Update `frontend/config.json` with the deployed gateway & wrapped token addresses (the repository `frontend/config.json` is pre-populated for the local demo).
+
+2. Start a local Hardhat node (if you haven't already):
+
+```powershell
+npx hardhat node
+```
+
+3. Start two relayer processes (use two different RELAYER_PK values):
+
+```powershell
+cd relayer
+# in terminal A
+$env:RELAYER_PK = "<privkey1>"; node src/multiChainRelayer.js
+# in terminal B
+$env:RELAYER_PK = "<privkey2>"; node src/multiChainRelayer.js
+```
+
+4. Emit a message so relayers will sign and submit the aggregated signature (this uses the `gateway` address in `frontend/config.json`):
+
+```powershell
+npx hardhat run scripts/emit_message.js --network localhost
+```
+
+Watch the relayer logs — when they detect the `MessageSent` (or `TokensLocked`) event they will sign the digest and once the quorum is reached they'll call `executeMessage`/`mintWrapped` on the destination gateway.
+
+Notes:
+- If relayers show "connection refused", make sure the RPC endpoints in `relayer/multi-chain.config.json` point to running nodes (for a single-node demo you can point all networks at `http://127.0.0.1:8545`).
+- The demo is intentionally minimal: production deployments would use multiple remote nodes, secure private key storage (MPC/HSM), and monitoring.
+
+---
+
+If you want, next step we can wire your existing DeFi logic to actually **call `bridgeToken` / `sendMessage`** so the lending pool becomes natively multi-chain instead of single-chain.
+
+
 Start a local Hardhat chain:
 
 ```powershell
@@ -54,6 +125,58 @@ npx hardhat run scripts/deploy.js --network localhost
 ```
 
 The script prints the deployed `MockERC20`, `LendingPoolFactory`, and each pool/model pair—keep them handy for the UI.
+
+### Demo script (optional quick demo)
+
+There is a convenience demo script that exercises the cross-chain merkle/receipt flow:
+
+Run it against a running local node:
+
+```powershell
+npm run demo -- --rpc http://127.0.0.1:8545 --accounts 0,1,2,3
+```
+
+Fast mode: skip waiting for transaction confirmations (useful for local demos):
+
+```powershell
+npm run demo:fast
+# or, using the demo script and passing flags through npm: npm run demo -- --fast=true
+```
+
+Note: `--fast` avoids awaiting tx confirmations and is intended for quick local demos only.
+
+Programmatic usage and interpreting the summary
+-----------------------------------------------
+
+You can import the demo script from Node and call `run(opts)` to get a structured summary useful for tests or automation.
+
+Example:
+
+```javascript
+// example.js
+const demo = require('./relayer/demo');
+
+async function main() {
+	// run the demo; fast=false waits for tx confirmations
+	const summary = await demo.run({ fast: false, timeoutMs: 60000, retries: 1 });
+	console.log('Summary:', summary);
+}
+
+main().catch(console.error);
+```
+
+Summary object fields:
+- `gateway`, `token`, `wrapped`, `lightClient`: deployed contract addresses
+- `receiptsRoot`: the merkle root submitted to the light client
+- `proofsSubmitted`: array of per-proof entries; each entry contains:
+	- `index`: proof index
+	- `leaf`: leaf hash (receipt keccak)
+	- `path`: path bitmask hex
+	- `txHash`: transaction hash when proof submission succeeded
+	- `error`: error message if submission failed
+- `finalBalance`: user wrapped token balance after processing proofs (string)
+
+This structured output is intended for programmatic assertions in integration tests and CI.
 
 ## 4. How It Works: Key Components
 

@@ -1,87 +1,123 @@
-const { ethers } = require("hardhat");
+const hre = require("hardhat");
+const { ethers } = hre;
+const fs = require("fs");
 
 async function main() {
-  console.log("🚀 Starting DeFi Lending Pool deployment...\n");
+  console.log("🚀 Starting multi-asset DeFi Lending Pool deployment...");
 
-  // Get the deployer account
+  // --- 0. Get Deployer & Log Balance ---
   const [deployer] = await ethers.getSigners();
-  console.log("📝 Deploying contracts with account:", deployer.address);
-  console.log("💰 Account balance:", ethers.formatEther(await ethers.provider.getBalance(deployer.address)), "ETH\n");
+  console.log(`\n👤 Deploying contracts with account: ${deployer.address}`);
+  const balance = await ethers.provider.getBalance(deployer.address);
+  console.log(`💰 Account balance: ${ethers.formatEther(balance)} ETH`);
 
-  // Deploy MockERC20 token first
-  console.log("📄 Deploying MockERC20 token...");
+  // --- 1. Deploy Mock Tokens ---
+  console.log("\n_Step 1: Deploying Mock ERC20 tokens (TKA & TKB)..._");
   const MockERC20 = await ethers.getContractFactory("MockERC20");
-  const token = await MockERC20.deploy("Test Token", "TEST");
-  await token.waitForDeployment();
-  const tokenAddress = await token.getAddress();
-  console.log("✅ MockERC20 deployed to:", tokenAddress);
+  
+  const tokenA = await MockERC20.deploy("Token A", "TKA");
+  await tokenA.waitForDeployment();
+  const tokenAAddress = await tokenA.getAddress();
+  console.log(`✅ Token A (TKA) deployed to: ${tokenAAddress}`);
 
-  // Mint some tokens to the deployer for testing
-  const mintAmount = ethers.parseEther("1000000"); // 1 million tokens
-  await token.mint(deployer.address, mintAmount);
-  console.log("🪙 Minted", ethers.formatEther(mintAmount), "TEST tokens to deployer\n");
+  const tokenB = await MockERC20.deploy("Token B", "TKB");
+  await tokenB.waitForDeployment();
+  const tokenBAddress = await tokenB.getAddress();
+  console.log(`✅ Token B (TKB) deployed to: ${tokenBAddress}`);
 
-  // Deploy interest rate model (using KinkInterestRateModel as default)
-  console.log("📈 Deploying KinkInterestRateModel...");
+  // --- 2. Deploy Price Oracle & Set Prices ---
+  console.log("\n_Step 2: Deploying MockPriceOracle and setting prices..._");
+  const MockPriceOracle = await ethers.getContractFactory("MockPriceOracle");
+  const priceOracle = await MockPriceOracle.deploy(deployer.address);
+  await priceOracle.waitForDeployment();
+  const priceOracleAddress = await priceOracle.getAddress();
+  console.log(`✅ MockPriceOracle deployed to: ${priceOracleAddress}`);
+
+  // Set prices: TKA = $100, TKB = $2000 (with 8 decimals for oracle)
+  await priceOracle.setPrice(tokenAAddress, ethers.parseUnits("100", 8));
+  console.log(`📈 Set TKA price to $100`);
+  await priceOracle.setPrice(tokenBAddress, ethers.parseUnits("2000", 8));
+  console.log(`📈 Set TKB price to $2000`);
+
+  // --- 3. Deploy Interest Rate Models ---
+  console.log("\n_Step 3: Deploying Interest Rate Models..._");
   const KinkInterestRateModel = await ethers.getContractFactory("KinkInterestRateModel");
-  const irm = await KinkInterestRateModel.deploy(
-    ethers.parseUnits("2", 16),   // 2% base APR
-    ethers.parseUnits("10", 16),  // 10% slope APR (low)
-    ethers.parseUnits("300", 16), // 300% slope APR (high)
-    ethers.parseUnits("80", 16)   // 80% optimal utilization
-  );
-  await irm.waitForDeployment();
-  const irmAddress = await irm.getAddress();
-  console.log("✅ KinkInterestRateModel deployed to:", irmAddress);
 
-  // Deploy LendingPool
-  console.log("🏦 Deploying LendingPool...");
-  const LendingPool = await ethers.getContractFactory("LendingPool");
-  const pool = await LendingPool.deploy(
-    tokenAddress,  // underlying token
-    irmAddress,    // interest rate model
-    ethers.parseUnits("75", 16)  // 75% collateral factor
+  const irmA = await KinkInterestRateModel.deploy(
+    ethers.parseUnits("0.02", 18), // 2% base
+    ethers.parseUnits("0.1", 18),  // 10% low slope
+    ethers.parseUnits("1", 18),    // 100% high slope
+    ethers.parseUnits("0.8", 18),  // 80% kink
+    deployer.address
   );
+  await irmA.waitForDeployment();
+  const irmAAddress = await irmA.getAddress();
+  console.log(`✅ IRM for Token A deployed to: ${irmAAddress}`);
+
+  const irmB = await KinkInterestRateModel.deploy(
+    ethers.parseUnits("0.03", 18), // 3% base
+    ethers.parseUnits("0.15", 18), // 15% low slope
+    ethers.parseUnits("1.5", 18),  // 150% high slope
+    ethers.parseUnits("0.8", 18),  // 80% kink
+    deployer.address
+  );
+  await irmB.waitForDeployment();
+  const irmBAddress = await irmB.getAddress();
+  console.log(`✅ IRM for Token B deployed to: ${irmBAddress}`);
+
+  // --- 4. Deploy LendingPool ---
+  console.log("\n_Step 4: Deploying LendingPool..._");
+  const LendingPool = await ethers.getContractFactory("LendingPool");
+  const pool = await LendingPool.deploy(priceOracleAddress, deployer.address);
   await pool.waitForDeployment();
   const poolAddress = await pool.getAddress();
-  console.log("✅ LendingPool deployed to:", poolAddress);
+  console.log(`✅ LendingPool deployed to: ${poolAddress}`);
 
-  // Display deployment summary
+  // --- 5. List Assets in the Pool ---
+  console.log("\n_Step 5: Listing assets in the LendingPool..._");
+  // Asset A: 75% collateral factor, 5% liquidation bonus
+  await pool.listAsset(tokenAAddress, irmAAddress, ethers.parseUnits("0.75", 18), ethers.parseUnits("0.05", 18));
+  console.log(`-> Listed Token A (TKA)`);
+  // Asset B: 80% collateral factor, 8% liquidation bonus
+  await pool.listAsset(tokenBAddress, irmBAddress, ethers.parseUnits("0.80", 18), ethers.parseUnits("0.08", 18));
+  console.log(`-> Listed Token B (TKB)`);
+
+  // --- 6. Log Deployed Addresses & Save to Frontend ---
   console.log("\n" + "=".repeat(60));
-  console.log("🎉 DEPLOYMENT COMPLETE!");
+  console.log("🎉 DEPLOYMENT COMPLETE! 🎉");
   console.log("=".repeat(60));
-  console.log("📄 MockERC20 Token:", tokenAddress);
-  console.log("📈 Interest Rate Model:", irmAddress);
-  console.log("🏦 Lending Pool:", poolAddress);
+  const deployedContracts = {
+    network: hre.network.name,
+    blockNumber: await ethers.provider.getBlockNumber(),
+    deployerAddress: deployer.address,
+    lendingPool: poolAddress,
+    priceOracle: priceOracleAddress,
+    assets: {
+      TKA: {
+        token: tokenAAddress,
+        irm: irmAAddress,
+      },
+      TKB: {
+        token: tokenBAddress,
+        irm: irmBAddress,
+      },
+    },
+  };
+  console.log(JSON.stringify(deployedContracts, null, 2));
   console.log("=".repeat(60));
-  console.log("\n📋 FRONTEND CONFIGURATION:");
-  console.log("Token Contract Address:", tokenAddress);
-  console.log("Pool Contract Address:", poolAddress);
-  console.log("\n🔧 NEXT STEPS:");
-  console.log("1. Copy the addresses above into the frontend");
-  console.log("2. Make sure MetaMask is connected to localhost:8545");
-  console.log("3. Import the token to MetaMask using the token address");
-  console.log("4. Start interacting with the DeFi protocol!");
 
   // Save addresses to a config file for the frontend
-  const config = {
-    network: "localhost",
-    tokenAddress: tokenAddress,
-    poolAddress: poolAddress,
-    irmAddress: irmAddress,
-    deployerAddress: deployer.address,
-    blockNumber: await ethers.provider.getBlockNumber()
-  };
-
-  const fs = require("fs");
-  fs.writeFileSync("./frontend/deployed-contracts.json", JSON.stringify(config, null, 2));
-  console.log("\n💾 Contract addresses saved to frontend/deployed-contracts.json");
+  fs.writeFileSync(
+    "./frontend/deployed-contracts.json",
+    JSON.stringify(deployedContracts, null, 2)
+  );
+  console.log("\n✅ Contract addresses saved to frontend/deployed-contracts.json");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
-    console.error("❌ Deployment failed:");
+    console.error("💥 Deployment failed:");
     console.error(error);
     process.exit(1);
   });

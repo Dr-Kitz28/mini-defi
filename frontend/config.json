@@ -6,4 +6,21 @@
       "pool": ""
     }
   }
+  ,
+  "gatewayV3": {
+    "chains": [
+      {
+        "name": "sepolia",
+        "chainId": 11155111,
+        "gateway": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        "wrappedToken": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+      },
+      {
+        "name": "amoy",
+        "chainId": 80002,
+        "gateway": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+        "wrappedToken": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
+      }
+    ]
+  }
 }

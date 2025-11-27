@@ -5,88 +5,272 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Mini DeFi Lending Pool</title>
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Additional styles for multi-asset UI */
+      .asset-selector {
+        width: 100%;
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        background: #fff;
+        font-size: 1rem;
+      }
+      
+      .status {
+        padding: 1rem;
+        border-radius: 4px;
+        margin: 1rem 0;
+        font-family: monospace;
+      }
+      
+      .status.info {
+        background: #e3f2fd;
+        color: #1565c0;
+        border: 1px solid #1565c0;
+      }
+      
+      .status.success {
+        background: #e8f5e9;
+        color: #2e7d32;
+        border: 1px solid #2e7d32;
+      }
+      
+      .status.error {
+        background: #ffebee;
+        color: #c62828;
+        border: 1px solid #c62828;
+      }
+      
+      #stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+      }
+      
+      .stat-card {
+        background: #f5f5f5;
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid #ddd;
+      }
+      
+      .stat-card h4 {
+        margin: 0 0 0.5rem 0;
+        color: #333;
+        border-bottom: 2px solid #2196f3;
+        padding-bottom: 0.5rem;
+      }
+      
+      .stat-card.account-summary {
+        background: #e3f2fd;
+        border-color: #2196f3;
+        grid-column: 1 / -1;
+      }
+      
+      .stat-card.error {
+        background: #ffebee;
+        border-color: #c62828;
+      }
+      
+      .pool-stats, .user-stats {
+        margin-top: 0.5rem;
+      }
+      
+      .pool-stats p, .user-stats p {
+        margin: 0.25rem 0;
+        font-size: 0.9rem;
+      }
+      
+      .user-stats {
+        border-top: 1px solid #ddd;
+        padding-top: 0.5rem;
+        margin-top: 0.5rem;
+      }
+      
+      #wallet-address {
+        font-family: monospace;
+        background: #e8f5e9;
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+      
+      .liquidate-form label {
+        display: block;
+        margin-bottom: 0.75rem;
+      }
+      
+      button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
   </head>
   <body>
     <main class="container">
       <header>
-        <h1>Mini DeFi Lending Pool</h1>
+        <h1>🏦 Mini DeFi Lending Pool</h1>
         <p>
-          Connect your wallet, paste the deployed contract addresses, and interact with the
-          lending pool. All values are in the pool's ERC-20 token units.
+          Multi-asset lending pool with cross-collateral support. 
+          Connect your MetaMask wallet to interact with the pool.
         </p>
-        <button id="connectWallet">Connect Wallet</button>
-        <p id="accountInfo" class="muted"></p>
+        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+          <button id="connect-btn">Connect Wallet</button>
+          <span id="wallet-address"></span>
+        </div>
       </header>
 
       <section class="card">
-        <h2>Configuration</h2>
-        <label>
-          Pool contract address
-          <input id="poolAddress" type="text" placeholder="0x..." />
-        </label>
-        <label>
-          Token contract address
-          <input id="tokenAddress" type="text" placeholder="0x..." />
-        </label>
-        <button id="refreshStats">Load Stats</button>
-        <div id="stats" class="muted"></div>
+        <h2>📊 Pool Statistics</h2>
+        <button id="refresh-stats">Load Stats</button>
+        <div id="stats-container">
+          <p class="muted">Connect wallet and click "Load Stats" to view pool information</p>
+        </div>
       </section>
+
+      <div id="status" class="status info">Ready to connect...</div>
 
       <section class="grid">
         <div class="card">
           <h3>Deposit</h3>
           <label>
-            Amount
-            <input id="depositAmount" type="number" min="0" step="0.0001" />
+            Asset
+            <select id="deposit-asset" class="asset-selector"></select>
           </label>
-          <button id="depositBtn">Deposit</button>
+          <label>
+            Amount
+            <input id="deposit-amount" type="number" min="0" step="0.0001" placeholder="0.0" />
+          </label>
+          <button id="deposit-btn">Deposit</button>
         </div>
+
         <div class="card">
           <h3>Withdraw</h3>
           <label>
-            Amount
-            <input id="withdrawAmount" type="number" min="0" step="0.0001" />
+            Asset
+            <select id="withdraw-asset" class="asset-selector"></select>
           </label>
-          <button id="withdrawBtn">Withdraw</button>
+          <label>
+            Shares to withdraw
+            <input id="withdraw-amount" type="number" min="0" step="0.0001" placeholder="0.0" />
+          </label>
+          <button id="withdraw-btn">Withdraw</button>
         </div>
+
         <div class="card">
           <h3>Borrow</h3>
           <label>
-            Amount
-            <input id="borrowAmount" type="number" min="0" step="0.0001" />
+            Asset
+            <select id="borrow-asset" class="asset-selector"></select>
           </label>
-          <button id="borrowBtn">Borrow</button>
+          <label>
+            Amount
+            <input id="borrow-amount" type="number" min="0" step="0.0001" placeholder="0.0" />
+          </label>
+          <button id="borrow-btn">Borrow</button>
         </div>
+
         <div class="card">
           <h3>Repay</h3>
           <label>
+            Asset
+            <select id="repay-asset" class="asset-selector"></select>
+          </label>
+          <label>
             Amount
-            <input id="repayAmount" type="number" min="0" step="0.0001" />
+            <input id="repay-amount" type="number" min="0" step="0.0001" placeholder="0.0" />
           </label>
-          <button id="repayBtn">Repay</button>
-          <button id="repayAllBtn" class="secondary">Repay All</button>
+          <button id="repay-btn">Repay</button>
         </div>
-        <div class="card">
-          <h3>Liquidate</h3>
-          <label>
-            Borrower address
-            <input id="liquidateAddress" type="text" placeholder="0x..." />
-          </label>
-          <label>
-            Repay amount
-            <input id="liquidateAmount" type="number" min="0" step="0.0001" />
-          </label>
-          <button id="liquidateBtn">Liquidate</button>
+
+        <div class="card" style="grid-column: span 2;">
+          <h3>Liquidate Unhealthy Position</h3>
+          <div class="liquidate-form">
+            <label>
+              Borrower Address
+              <input id="liquidate-borrower" type="text" placeholder="0x..." style="width: 100%;" />
+            </label>
+            <label>
+              Borrow Asset (to repay)
+              <select id="liquidate-borrow-asset" class="asset-selector"></select>
+            </label>
+            <label>
+              Collateral Asset (to seize)
+              <select id="liquidate-collateral-asset" class="asset-selector"></select>
+            </label>
+            <label>
+              Repay Amount
+              <input id="liquidate-amount" type="number" min="0" step="0.0001" placeholder="0.0" />
+            </label>
+            <button id="liquidate-btn">Liquidate</button>
+          </div>
         </div>
       </section>
 
       <section class="card">
-        <h2>Status</h2>
-        <pre id="log"></pre>
+        <h2>How to Use</h2>
+        <ol>
+          <li><strong>Connect Wallet:</strong> Click "Connect Wallet" and approve in MetaMask</li>
+          <li><strong>View Stats:</strong> Click "Load Stats" to see pool and account information</li>
+          <li><strong>Deposit:</strong> Select an asset, enter amount, and deposit to earn interest</li>
+          <li><strong>Borrow:</strong> After depositing collateral, borrow against it (up to collateral factor)</li>
+          <li><strong>Repay:</strong> Repay borrowed amount plus accrued interest</li>
+          <li><strong>Withdraw:</strong> Withdraw your deposited shares (if not used as collateral)</li>
+          <li><strong>Liquidate:</strong> Liquidate undercollateralized positions for a bonus</li>
+        </ol>
       </section>
     </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js"></script>
-    <script src="app.js"></script>
+    <!-- Load ethers.js, with a CDN fallback loader -->
+    <script>
+      (function loadEthersThenApp() {
+        const cdns = [
+          'https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js',
+          'https://unpkg.com/ethers@6.9.0/dist/ethers.umd.min.js',
+          'https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.min.js',
+          'https://unpkg.com/ethers@6.9.0/dist/ethers.min.js'
+        ];
+
+        function loadScript(src) {
+          return new Promise((resolve, reject) => {
+            const s = document.createElement('script');
+            s.src = src;
+            s.onload = () => resolve(src);
+            s.onerror = () => reject(new Error('Failed to load ' + src));
+            document.head.appendChild(s);
+          });
+        }
+
+        (async () => {
+          let loaded = false;
+          for (const url of cdns) {
+            try {
+              await loadScript(url);
+              console.log('Loaded ethers from', url);
+              loaded = true;
+              break;
+            } catch (e) {
+              console.warn(e.message);
+            }
+          }
+
+          if (!loaded) {
+            const msg = 'Could not load ethers.js from CDN. Please check your network connection.';
+            console.error(msg);
+            const statusEl = document.getElementById('status');
+            if (statusEl) {
+              statusEl.textContent = msg;
+              statusEl.className = 'status error';
+            }
+          }
+
+          const app = document.createElement('script');
+          app.src = 'app.js';
+          document.head.appendChild(app);
+        })();
+      })();
+    </script>
   </body>
 </html>
