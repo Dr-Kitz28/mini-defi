@@ -13,7 +13,12 @@
   - relayers sign messageHash and aggregator submits aggregated signatures to receiveTokens
 */
 
-require('dotenv').config();
+// Guarded dotenv import: some CI runners may not install devDependencies.
+try {
+  require('dotenv').config();
+} catch (e) {
+  // dotenv is optional in CI; continue without crashing when it's absent
+}
 const { ethers } = require('hardhat');
 const rlpUtil = require('../test/utils/rlpValidator')(ethers);
 
