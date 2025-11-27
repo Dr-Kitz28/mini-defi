@@ -15,7 +15,8 @@
   "license": "ISC",
   "devDependencies": {
     "hardhat": "^2.26.3",
-    "cross-env": "^7.0.3"
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.0.3"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.1.0",
