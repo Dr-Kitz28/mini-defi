@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "npx hardhat test",
+    "test:merkle": "npx hardhat test test/utils test/bridge",
     "deploy": "npx hardhat run scripts/deploy.js --network localhost",
     "serve": "npx http-server frontend -p 8000"
   },
