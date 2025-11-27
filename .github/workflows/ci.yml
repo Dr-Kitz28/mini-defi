@@ -16,8 +16,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (including devDependencies)
+        run: npm ci --include=dev
+        # npm v9+ supports --include=dev; using this flag makes the intent explicit
       - name: Run merkle-heavy tests (increased heap)
         run: NODE_OPTIONS='--max-old-space-size=4096' npm run test:merkle
       - name: Run remaining tests
