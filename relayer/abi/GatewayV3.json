@@ -1,0 +1,56 @@
+[
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "sender", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "toChainId", "type": "uint256" },
+      { "indexed": true, "internalType": "address", "name": "target", "type": "address" },
+      { "indexed": false, "internalType": "bytes", "name": "data", "type": "bytes" },
+      { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "nonce", "type": "uint256" }
+    ],
+    "name": "MessageSent",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true, "internalType": "address", "name": "sender", "type": "address" },
+      { "indexed": true, "internalType": "address", "name": "token", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "toChainId", "type": "uint256" },
+      { "indexed": false, "internalType": "address", "name": "recipient", "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "nonce", "type": "uint256" }
+    ],
+    "name": "TokensLocked",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "wrappedToken", "type": "address" },
+      { "internalType": "address", "name": "recipient", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" },
+      { "internalType": "bytes32", "name": "sourceTxHash", "type": "bytes32" },
+      { "internalType": "bytes[]", "name": "signatures", "type": "bytes[]" }
+    ],
+    "name": "mintWrapped",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      { "internalType": "uint256", "name": "fromChainId", "type": "uint256" },
+      { "internalType": "address", "name": "sender", "type": "address" },
+      { "internalType": "address", "name": "target", "type": "address" },
+      { "internalType": "bytes", "name": "data", "type": "bytes" },
+      { "internalType": "uint256", "name": "value", "type": "uint256" },
+      { "internalType": "bytes32", "name": "sourceMsgHash", "type": "bytes32" },
+      { "internalType": "bytes[]", "name": "signatures", "type": "bytes[]" }
+    ],
+    "name": "executeMessage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+]

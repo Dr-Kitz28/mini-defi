@@ -1,301 +1,415 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IInterestRateModel} from "./interfaces/IInterestRateModel.sol";
+import {IPriceOracle} from "./interfaces/IPriceOracle.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-error ZeroAmount();
-error InsufficientDeposit();
-error BorrowLimitExceeded();
+error AssetNotListed();
+error InsufficientCollateral();
 error InsufficientLiquidity();
-error NothingToRepay();
-error BorrowerHealthy();
+error LiquidationNotPossible();
+error ZeroAddress();
+error AssetAlreadyListed();
+error ZeroAmount();
 
-/// @notice Minimal single-asset lending pool with super-simplified accounting.
-/// Users:
-/// - deposit(asset)
-/// - withdraw(asset)
-/// - borrow(asset) up to 66.66% of their deposits (150% collateral requirement)
-/// - repay(asset)
-/// Interest:
-/// - Linear simple interest on each borrower since their last action.
-contract LendingPool {
-    using SafeERC20 for IERC20;
+/// @title Multi-Asset Lending Pool
+/// @notice A lending pool that supports multiple assets, cross-collateral borrowing, and isolated asset configurations.
+contract LendingPool is Ownable, ReentrancyGuard {
+    using SafeERC20 for IERC20Metadata;
 
     uint256 private constant PRECISION = 1e18;
-    uint256 private constant COLLATERAL_FACTOR = 666666666666666667; // 66.6666%
-    uint256 private constant LIQUIDATION_BONUS = 1050000000000000000; // 1.05x seize incentive
 
-    IERC20 public immutable asset; // single ERC20 asset
-    IInterestRateModel public irm; // interest rate model
-
-    /// @notice One-time hook for the owner to set the interest rate model
-    function setIRM(address _irm) external {
-        require(address(irm) == address(0), "irm already set");
-        require(_irm != address(0), "irm zero");
-        irm = IInterestRateModel(_irm);
+    /// @notice Configuration for each listed asset.
+    struct AssetConfig {
+        address assetAddress;
+        address irmAddress;
+        uint256 collateralFactor; // e.g., 75e16 for 75%
+        uint256 liquidationBonus; // e.g., 5e16 for 5%
+        bool isActive;
     }
 
-    uint256 public totalDeposits; // pool total deposits (value of all shares)
-    uint256 public totalBorrows; // pool total borrows (principal only)
-
-    mapping(address => uint256) public shares;
-    uint256 public totalShares;
-
-    mapping(address => Borrow) public borrows;
-    address[] public borrowers;
-
-    struct Borrow {
-        uint256 principal; // what user currently owes as principal
-        uint256 timestamp; // last time we updated their loan
+    /// @notice Per-user accounting for a specific asset.
+    struct UserAssetAccount {
+        uint256 shares; // Number of shares representing the user's deposit
+        uint256 borrowPrincipal;
+        uint256 borrowIndex;
     }
 
-    event Deposit(address indexed user, uint256 amount);
-    event Withdraw(address indexed user, uint256 amount);
-    event Borrowed(address indexed user, uint256 amount);
-    event Repaid(address indexed user, uint256 amount);
-    event InterestAccrued(address indexed user, uint256 interest);
-    event Liquidated(
+    /// @notice Per-asset accounting for the entire pool.
+    struct PoolAssetAccount {
+        uint256 totalShares;
+        uint256 totalBorrows;
+        uint256 borrowIndex;
+        uint256 lastInterestAccruedTimestamp;
+        uint256 totalReserves;
+    }
+
+    IPriceOracle public priceOracle;
+
+    mapping(address => AssetConfig) public assetConfigs;
+    address[] public listedAssets;
+
+    mapping(address => mapping(address => UserAssetAccount)) public userAccounts; // user => asset => account
+    mapping(address => PoolAssetAccount) public poolAccounts; // asset => account
+
+    event AssetListed(address indexed asset, address irm, uint256 collateralFactor, uint256 liquidationBonus);
+    event AssetConfigUpdated(address indexed asset, uint256 collateralFactor, uint256 liquidationBonus);
+    event PriceOracleUpdated(address indexed newOracle);
+    event Deposit(address indexed user, address indexed asset, uint256 amount, uint256 shares);
+    event Withdraw(address indexed user, address indexed asset, uint256 amount, uint256 shares);
+    event Borrow(address indexed user, address indexed asset, uint256 amount);
+    event Repay(address indexed user, address indexed asset, uint256 amount);
+    event Liquidate(
         address indexed liquidator,
         address indexed borrower,
-        uint256 repaidAmount,
-        uint256 collateralSeized
+        address indexed collateralAsset,
+        address borrowAsset, // Removed indexed
+        uint256 repayAmount,
+        uint256 seizedAmount
     );
 
-    constructor(address _asset) {
-        asset = IERC20(_asset);
+    constructor(address _priceOracle, address admin) Ownable(admin) {
+        if (_priceOracle == address(0)) revert ZeroAddress();
+        priceOracle = IPriceOracle(_priceOracle);
     }
 
-    /// @notice The current utilization of the pool's liquidity
-    function utilization() public view returns (uint256) {
-        uint256 totalAsset = asset.balanceOf(address(this));
-        if (totalAsset == 0) return 0;
-        if (totalBorrows > totalAsset) return 1e18;
-        return (totalBorrows * 1e18) / totalAsset;
+    // --- Admin Functions ---
+
+    function setPriceOracle(address _newOracle) external onlyOwner {
+        if (_newOracle == address(0)) revert ZeroAddress();
+        priceOracle = IPriceOracle(_newOracle);
+        emit PriceOracleUpdated(_newOracle);
     }
 
-    function availableLiquidity() public view returns (uint256) {
-        return asset.balanceOf(address(this));
+    function listAsset(
+        address _asset,
+        address _irm,
+        uint256 _collateralFactor,
+        uint256 _liquidationBonus
+    ) external onlyOwner {
+        if (assetConfigs[_asset].isActive) revert AssetAlreadyListed();
+        if (_asset == address(0) || _irm == address(0)) revert ZeroAddress();
+
+        assetConfigs[_asset] = AssetConfig({
+            assetAddress: _asset,
+            irmAddress: _irm,
+            collateralFactor: _collateralFactor,
+            liquidationBonus: _liquidationBonus,
+            isActive: true
+        });
+        listedAssets.push(_asset);
+
+        emit AssetListed(_asset, _irm, _collateralFactor, _liquidationBonus);
     }
 
-    function _borrowLimit(address user) internal view returns (uint256) {
-        uint256 collateralValue = getAmountForShares(shares[user]);
-        return (collateralValue * COLLATERAL_FACTOR) / PRECISION;
+    function updateAssetConfig(
+        address _asset,
+        uint256 _collateralFactor,
+        uint256 _liquidationBonus
+    ) external onlyOwner {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+        assetConfigs[_asset].collateralFactor = _collateralFactor;
+        assetConfigs[_asset].liquidationBonus = _liquidationBonus;
+        emit AssetConfigUpdated(_asset, _collateralFactor, _liquidationBonus);
     }
 
-    /// max a user can newly borrow now (ignores interest until next action)
-    function maxBorrowable(address user) public view returns (uint256) {
-        uint256 borrowLimit = _borrowLimit(user);
-        uint256 debt = borrows[user].principal;
-        if (debt >= borrowLimit) return 0;
-        return borrowLimit - debt;
+    // --- User Functions ---
+
+    function deposit(address _asset, uint256 _amount) external nonReentrant {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+        if (_amount == 0) revert ZeroAmount();
+
+        _accrueInterest(_asset);
+
+        UserAssetAccount storage userAccount = userAccounts[msg.sender][_asset];
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+
+        uint256 shares = _getSharesForAmount(_asset, _amount);
+        userAccount.shares += shares;
+        poolAccount.totalShares += shares;
+
+        IERC20Metadata(_asset).safeTransferFrom(msg.sender, address(this), _amount);
+        emit Deposit(msg.sender, _asset, _amount, shares);
     }
 
-    function deposit(uint256 amount) public {
-        if (amount == 0) revert ZeroAmount();
-        _accrueAllInterest();
-        uint256 newShares = getSharesForAmount(amount);
+    function withdraw(address _asset, uint256 _shares) external nonReentrant {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+        if (_shares == 0) revert ZeroAmount();
 
-        totalDeposits += amount;
-        totalShares += newShares;
-        shares[msg.sender] += newShares;
+        _accrueInterest(_asset);
 
-        asset.safeTransferFrom(msg.sender, address(this), amount);
+        UserAssetAccount storage userAccount = userAccounts[msg.sender][_asset];
+        if (userAccount.shares < _shares) revert InsufficientCollateral();
 
-        emit Deposit(msg.sender, amount);
+        uint256 amount = _getAmountForShares(_asset, _shares);
+        
+        (, uint256 totalBorrowValue) = _getAccountLiquidity(msg.sender);
+        uint256 collateralValueAfter = _getCollateralValue(msg.sender, _asset, userAccount.shares - _shares);
+        
+        if (totalBorrowValue > collateralValueAfter) revert InsufficientCollateral();
+
+        userAccount.shares -= _shares;
+        poolAccounts[_asset].totalShares -= _shares;
+
+        // The external call is made AFTER the state change.
+        IERC20Metadata(_asset).safeTransfer(msg.sender, amount);
+
+        emit Withdraw(msg.sender, _asset, amount, _shares);
     }
 
-    function accrueInterest(address user) public {
-        _accrueInterest(user);
-    }
+    function borrow(address _asset, uint256 _amount) external nonReentrant {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
 
-    /**
-     * @notice Withdraws an amount of the underlying asset.
-     * @dev The amount is denominated in the underlying asset. The contract will burn the corresponding number of shares.
-     * @param sharesToBurn The number of shares to burn.
-     */
-    function withdraw(uint256 sharesToBurn) public {
-        _accrueAllInterest(); // Accrue all interest before any calculations
-        require(shares[msg.sender] >= sharesToBurn, "Insufficient shares");
+        _accrueInterest(_asset);
 
-        uint256 amountToWithdraw = getAmountForShares(sharesToBurn);
-        require(availableLiquidity() >= amountToWithdraw, "Insufficient liquidity");
-
-        totalDeposits -= amountToWithdraw;
-        shares[msg.sender] -= sharesToBurn;
-        totalShares -= sharesToBurn;
-
-        asset.safeTransfer(msg.sender, amountToWithdraw);
-
-        emit Withdraw(msg.sender, amountToWithdraw);
-    }
-
-    function withdrawAll() public {
-        withdraw(shares[msg.sender]);
-    }
-
-    function borrow(uint256 amount) public {
-        require(amount > 0, "Amount must be > 0");
-        _accrueInterest(msg.sender);
-
-        if (borrows[msg.sender].principal == 0) {
-            borrowers.push(msg.sender);
-        }
-
-        uint256 maxBorrow = maxBorrowable(msg.sender);
-        require(borrows[msg.sender].principal + amount <= maxBorrow, "Exceeds collateral factor");
-
-        if (availableLiquidity() < amount) revert InsufficientLiquidity();
-
-        Borrow storage b = borrows[msg.sender];
-        b.principal += amount;
-        b.timestamp = block.timestamp;
-        totalBorrows += amount;
-
-        asset.safeTransfer(msg.sender, amount);
-
-        emit Borrowed(msg.sender, amount);
-    }
-
-    function repay(uint256 amount) public {
-        // Allow repay(0) to trigger interest accrual without reverting
-        if (amount == 0) {
-            _accrueInterest(msg.sender);
+        if (_amount == 0) {
+            // Allow zero-amount borrows to trigger interest accrual without further checks
             return;
         }
-        
-        uint256 principalBefore = borrows[msg.sender].principal;
-        _accrueInterest(msg.sender);
 
-        Borrow storage b = borrows[msg.sender];
-        uint256 debt = b.principal; // This now includes interest
-        if (debt == 0) revert NothingToRepay();
+        (uint256 totalCollateralValue, uint256 totalBorrowValue) = _getAccountLiquidity(msg.sender);
+        uint256 assetPrice = priceOracle.getPrice(_asset);
+        uint256 borrowValue = (_amount * assetPrice) / (10 ** IERC20Metadata(_asset).decimals());
 
-        uint256 repayAmount = amount > debt ? debt : amount;
+        if (totalBorrowValue + borrowValue > totalCollateralValue) revert InsufficientCollateral();
+        if (IERC20Metadata(_asset).balanceOf(address(this)) < _amount) revert InsufficientLiquidity();
 
-        b.principal = debt - repayAmount;
-        if (b.principal == 0) {
-            b.timestamp = 0;
+        UserAssetAccount storage userAccount = userAccounts[msg.sender][_asset];
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+
+        uint256 previousDebt = (userAccount.borrowPrincipal * poolAccount.borrowIndex) / (userAccount.borrowIndex > 0 ? userAccount.borrowIndex : PRECISION);
+        userAccount.borrowPrincipal = previousDebt + _amount;
+        userAccount.borrowIndex = poolAccount.borrowIndex > 0 ? poolAccount.borrowIndex : PRECISION;
+        poolAccount.totalBorrows += _amount;
+
+        SafeERC20.safeTransfer(IERC20Metadata(_asset), msg.sender, _amount);
+        emit Borrow(msg.sender, _asset, _amount);
+    }
+
+    function repay(address _asset, uint256 _amount) external nonReentrant {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+        if (_amount == 0) revert ZeroAmount();
+
+        _accrueInterest(_asset);
+
+        UserAssetAccount storage userAccount = userAccounts[msg.sender][_asset];
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+
+        uint256 totalDebt = (userAccount.borrowPrincipal * poolAccount.borrowIndex) / (userAccount.borrowIndex > 0 ? userAccount.borrowIndex : PRECISION);
+        uint256 repayAmount = _amount >= totalDebt ? totalDebt : _amount;
+
+        userAccount.borrowPrincipal = totalDebt - repayAmount;
+        if (userAccount.borrowPrincipal == 0) {
+            userAccount.borrowIndex = 0;
         } else {
-            b.timestamp = block.timestamp;
+            userAccount.borrowIndex = poolAccount.borrowIndex > 0 ? poolAccount.borrowIndex : PRECISION;
         }
+        poolAccount.totalBorrows -= repayAmount;
 
-        uint256 interestPaid = debt - principalBefore;
-        uint256 principalPaid = repayAmount > interestPaid ? repayAmount - interestPaid : 0;
-
-        totalBorrows -= principalPaid;
-
-        asset.safeTransferFrom(msg.sender, address(this), repayAmount);
-
-        emit Repaid(msg.sender, repayAmount);
+        SafeERC20.safeTransferFrom(IERC20Metadata(_asset), msg.sender, address(this), repayAmount);
+        emit Repay(msg.sender, _asset, repayAmount);
     }
 
-    function repayAll() external {
-        _accrueInterest(msg.sender);
+    function liquidate(address _borrower, address _borrowAsset, address _collateralAsset, uint256 _repayAmount) external nonReentrant {
+        _validateLiquidationPrerequisites(_borrower, _borrowAsset, _collateralAsset);
 
-        Borrow storage b = borrows[msg.sender];
-        uint256 debt = b.principal;
-        if (debt == 0) revert NothingToRepay();
+        (uint256 repayAmount, uint256 seizedShares) = _calculateLiquidationAmounts(
+            _borrower,
+            _borrowAsset,
+            _collateralAsset,
+            _repayAmount
+        );
 
-        b.principal = 0;
-        b.timestamp = 0;
-
-        totalBorrows -= debt;
-
-        asset.safeTransferFrom(msg.sender, address(this), debt);
-
-        emit Repaid(msg.sender, debt);
-    }
-
-    function liquidate(address user, uint256 amount) public {
-        if (amount == 0) revert ZeroAmount();
-
-        _accrueInterest(user);
-
-        Borrow storage b = borrows[user];
-        uint256 debt = b.principal;
-        if (debt == 0) revert NothingToRepay();
-
-        if (isHealthy(user)) revert BorrowerHealthy();
-
-        uint256 actualRepay = amount > debt ? debt : amount;
-
-        // Seize collateral
-        uint256 seizeAmount = (actualRepay * LIQUIDATION_BONUS) / PRECISION;
-        uint256 seizeShares = getSharesForAmount(seizeAmount);
-        uint256 borrowerShares = shares[user];
-        if (seizeShares > borrowerShares) {
-            seizeShares = borrowerShares;
-        }
-        shares[user] -= seizeShares;
-        shares[msg.sender] += seizeShares;
-
-        emit Liquidated(
+        _performLiquidation(
             msg.sender,
-            user,
-            actualRepay,
-            getAmountForShares(seizeShares)
+            _borrower,
+            _borrowAsset,
+            _collateralAsset,
+            repayAmount,
+            seizedShares
         );
     }
 
-    // ===== Internal =====
+    function _validateLiquidationPrerequisites(address _borrower, address _borrowAsset, address _collateralAsset) internal {
+        if (!assetConfigs[_borrowAsset].isActive || !assetConfigs[_collateralAsset].isActive) revert AssetNotListed();
 
-    function _accrueAllInterest() internal {
-        for (uint i = 0; i < borrowers.length; i++) {
-            address borrower = borrowers[i];
-            if (borrows[borrower].principal > 0) {
-                _accrueInterest(borrower);
-            }
+        _accrueInterest(_borrowAsset);
+        _accrueInterest(_collateralAsset);
+
+        (uint256 totalCollateralValue, uint256 totalBorrowValue) = _getAccountLiquidity(_borrower);
+        if (totalBorrowValue == 0 || totalCollateralValue >= totalBorrowValue) revert LiquidationNotPossible();
+    }
+
+    function _calculateLiquidationAmounts(
+        address _borrower,
+        address _borrowAsset,
+        address _collateralAsset,
+        uint256 _repayAmount
+    ) internal view returns (uint256 repayAmount, uint256 seizedShares) {
+        UserAssetAccount storage borrowerBorrowAcc = userAccounts[_borrower][_borrowAsset];
+        PoolAssetAccount storage poolAccount = poolAccounts[_borrowAsset];
+        uint256 totalDebt = (borrowerBorrowAcc.borrowPrincipal * poolAccount.borrowIndex) / (borrowerBorrowAcc.borrowIndex > 0 ? borrowerBorrowAcc.borrowIndex : PRECISION);
+        
+        // Allow liquidating the full debt by passing max uint
+        if (_repayAmount == type(uint256).max) {
+            repayAmount = totalDebt;
+        } else {
+            repayAmount = _repayAmount > totalDebt ? totalDebt : _repayAmount;
+        }
+
+        uint256 borrowAssetPrice = priceOracle.getPrice(_borrowAsset);
+        uint256 collateralAssetPrice = priceOracle.getPrice(_collateralAsset);
+
+        // The value of collateral to be seized is the value of debt repaid plus a bonus
+        uint256 seizedValue = (repayAmount * borrowAssetPrice * (PRECISION + assetConfigs[_borrowAsset].liquidationBonus)) / (collateralAssetPrice * PRECISION);
+        uint256 seizedAmount = (seizedValue * (10 ** IERC20Metadata(_collateralAsset).decimals())) / (10**18);
+        
+        seizedShares = _getSharesForAmount(_collateralAsset, seizedAmount);
+        
+        UserAssetAccount storage borrowerCollateralAcc = userAccounts[_borrower][_collateralAsset];
+        if (seizedShares > borrowerCollateralAcc.shares) {
+            seizedShares = borrowerCollateralAcc.shares;
         }
     }
 
-    function _accrueInterest(address user) internal {
-        if (borrows[user].principal == 0) {
+    function _performLiquidation(
+        address _liquidator,
+        address _borrower,
+        address _borrowAsset,
+        address _collateralAsset,
+        uint256 _repayAmount,
+        uint256 _seizedShares
+    ) internal {
+        // Seize collateral
+        userAccounts[_borrower][_collateralAsset].shares -= _seizedShares;
+        userAccounts[_liquidator][_collateralAsset].shares += _seizedShares;
+
+        // Repay borrow
+        UserAssetAccount storage borrowerBorrowAcc = userAccounts[_borrower][_borrowAsset];
+        PoolAssetAccount storage poolAccount = poolAccounts[_borrowAsset];
+        
+        uint256 totalDebt = (borrowerBorrowAcc.borrowPrincipal * poolAccount.borrowIndex) / (borrowerBorrowAcc.borrowIndex > 0 ? borrowerBorrowAcc.borrowIndex : PRECISION);
+        borrowerBorrowAcc.borrowPrincipal = totalDebt - _repayAmount;
+        if (borrowerBorrowAcc.borrowPrincipal == 0) {
+            borrowerBorrowAcc.borrowIndex = 0;
+        } else {
+            borrowerBorrowAcc.borrowIndex = poolAccount.borrowIndex > 0 ? poolAccount.borrowIndex : PRECISION;
+        }
+        poolAccount.totalBorrows -= _repayAmount;
+
+        SafeERC20.safeTransferFrom(IERC20Metadata(_borrowAsset), _liquidator, address(this), _repayAmount);
+
+        uint256 seizedAmount = _getAmountForShares(_collateralAsset, _seizedShares);
+        emit Liquidate(_liquidator, _borrower, _collateralAsset, _borrowAsset, _repayAmount, seizedAmount);
+    }
+
+    function getAccountLiquidity(address _user)
+        public
+        view
+        returns (uint256 totalCollateralValue, uint256 totalBorrowValue)
+    {
+        return _getAccountLiquidity(_user);
+    }
+
+    function getAmountForShares(address _asset, uint256 _shares) public view returns (uint256) {
+        return _getAmountForShares(_asset, _shares);
+    }
+
+    function getTotalDebt(address _asset, address _user) public view returns (uint256) {
+        UserAssetAccount memory userAccount = userAccounts[_user][_asset];
+        if (userAccount.borrowPrincipal == 0) {
+            return 0;
+        }
+        PoolAssetAccount memory poolAccount = poolAccounts[_asset];
+        // This function reads the state as of the last accrual.
+        // For up-to-the-second debt, accrueInterest must be called first by a state-changing transaction.
+        return (userAccount.borrowPrincipal * poolAccount.borrowIndex) / (userAccount.borrowIndex > 0 ? userAccount.borrowIndex : PRECISION);
+    }
+
+    // --- Internal Functions ---
+
+    function _accrueInterest(address _asset) internal {
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+        uint256 lastTimestamp = poolAccount.lastInterestAccruedTimestamp;
+        if (lastTimestamp == 0) { // Handle first interaction
+            poolAccount.lastInterestAccruedTimestamp = block.timestamp;
+            poolAccount.borrowIndex = PRECISION; // Initialize borrow index
             return;
         }
 
-        uint256 elapsed = block.timestamp - borrows[user].timestamp;
-        if (elapsed == 0) return;
-
-        uint256 currentRate;
-        try irm.updateBorrowRate(this.utilization()) {
-            // The update function in the default IRM does not return a value.
-            // We just need to trigger it. After it runs, the new rate is in its `currentAPR` state.
-        } catch {
-            // If the call fails for some reason, we can just proceed with the last known rate.
+        uint256 elapsed = block.timestamp - lastTimestamp;
+        if (elapsed == 0 || poolAccount.totalBorrows == 0) {
+            return;
         }
-        currentRate = irm.getBorrowRatePerSecond(this.utilization());
 
-        uint256 interest = (borrows[user].principal * currentRate * elapsed) / PRECISION;
-        if (interest > 0) {
-            borrows[user].principal += interest;
-            totalBorrows += interest;
-            totalDeposits += interest; // Interest earned increases the value of all deposits
-            borrows[user].timestamp = block.timestamp;
-            emit InterestAccrued(user, interest);
-        }
+        uint256 totalDeposits = _getAmountForShares(_asset, poolAccount.totalShares);
+        uint256 utilization = totalDeposits == 0 ? 0 : (poolAccount.totalBorrows * PRECISION) / totalDeposits;
+
+        IInterestRateModel irm = IInterestRateModel(assetConfigs[_asset].irmAddress);
+        uint256 borrowRatePerSecond = irm.getBorrowRatePerSecond(utilization);
+
+        uint256 interest = (poolAccount.totalBorrows * borrowRatePerSecond * elapsed) / PRECISION;
+        poolAccount.totalBorrows += interest;
+        poolAccount.borrowIndex = poolAccount.borrowIndex * (PRECISION + (borrowRatePerSecond * elapsed)) / PRECISION;
+        poolAccount.lastInterestAccruedTimestamp = block.timestamp;
     }
 
-    function isHealthy(address user) public returns (bool) {
-        _accrueAllInterest(); // Accrue all interest to get the latest collateral value
-        uint256 borrowLimit = _borrowLimit(user);
-        return borrows[user].principal <= borrowLimit;
+    function _getAccountLiquidity(address _user)
+        internal
+        view
+        returns (uint256 totalCollateralValue, uint256 totalBorrowValue)
+    {
+        uint256 assetsLength = listedAssets.length;
+        for (uint i = 0; i < assetsLength; i++) {
+            address assetAddr = listedAssets[i];
+            AssetConfig memory config = assetConfigs[assetAddr];
+            UserAssetAccount memory userAccount = userAccounts[_user][assetAddr];
+
+            // Calculate collateral value
+            if (userAccount.shares > 0) {
+                uint256 amount = _getAmountForShares(assetAddr, userAccount.shares);
+                uint256 price = priceOracle.getPrice(assetAddr);
+                uint256 value = (amount * price) / (10 ** IERC20Metadata(assetAddr).decimals());
+                totalCollateralValue += (value * config.collateralFactor) / PRECISION;
+            }
+
+            // Calculate borrow value
+            if (userAccount.borrowPrincipal > 0) {
+                PoolAssetAccount memory poolAccount = poolAccounts[assetAddr];
+                uint256 borrowAmount = (userAccount.borrowPrincipal * poolAccount.borrowIndex) / (userAccount.borrowIndex > 0 ? userAccount.borrowIndex : PRECISION);
+                uint256 price = priceOracle.getPrice(assetAddr);
+                uint256 value = (borrowAmount * price) / (10 ** IERC20Metadata(assetAddr).decimals());
+                totalBorrowValue += value;
+            }
+        }
+    }
+    
+    function _getCollateralValue(address /*_user*/, address _asset, uint256 _shares) internal view returns (uint256) {
+        AssetConfig storage config = assetConfigs[_asset];
+        uint256 amount = _getAmountForShares(_asset, _shares);
+        uint256 price = priceOracle.getPrice(_asset);
+        return (amount * price * config.collateralFactor) / (PRECISION * (10 ** IERC20Metadata(_asset).decimals()));
     }
 
-    function getAmountForShares(uint256 _shares) public view returns (uint256) {
-        if (totalShares == 0) {
-            return 0;
-        }
-        // Use rounding to prevent precision errors
-        return (_shares * totalDeposits + (totalShares / 2)) / totalShares;
+    function _getAmountForShares(address _asset, uint256 _shares) internal view returns (uint256) {
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+        uint256 totalDeposits = IERC20Metadata(_asset).balanceOf(address(this)) + poolAccount.totalBorrows - poolAccount.totalReserves;
+        if (poolAccount.totalShares == 0) return _shares; // 1:1 for first deposit
+        return (_shares * totalDeposits) / poolAccount.totalShares;
     }
 
-    function getSharesForAmount(uint256 amount) public view returns (uint256) {
-        if (totalDeposits == 0 || totalShares == 0) {
-            return amount; // 1:1 for first deposit
-        }
-        // Use rounding to prevent precision errors
-        return (amount * totalShares + (totalDeposits / 2)) / totalDeposits;
+    function accrueInterest(address _asset) external {
+        _accrueInterest(_asset);
+    }
+
+    function _getSharesForAmount(address _asset, uint256 _amount) internal view returns (uint256) {
+        PoolAssetAccount storage poolAccount = poolAccounts[_asset];
+        uint256 totalDeposits = IERC20Metadata(_asset).balanceOf(address(this)) + poolAccount.totalBorrows - poolAccount.totalReserves;
+        if (totalDeposits == 0) return _amount; // 1:1 for first deposit
+        return (_amount * poolAccount.totalShares) / totalDeposits;
     }
 }
