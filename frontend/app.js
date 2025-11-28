@@ -64,18 +64,24 @@ function _initWhenReady() {
 _initWhenReady();
 
 async function initializeApp() {
+    console.log('[Mini-DeFi] Initializing app...');
+    
     // Load contract addresses
     try {
         const response = await fetch('deployed-contracts.json');
         if (response.ok) {
             window.deployedContracts = await response.json();
+            console.log('[Mini-DeFi] Loaded contracts:', window.deployedContracts);
+        } else {
+            console.warn('[Mini-DeFi] Failed to load deployed-contracts.json:', response.status);
         }
     } catch (e) {
-        console.log('No deployed contracts found, will prompt for address');
+        console.log('[Mini-DeFi] No deployed contracts found, will prompt for address:', e);
     }
 
     // Check for existing wallet connection
     if (window.ethereum && window.ethereum.selectedAddress) {
+        console.log('[Mini-DeFi] Found existing connection, reconnecting...');
         await connectWallet();
     }
 
@@ -86,6 +92,7 @@ async function initializeApp() {
 
     // Update network display
     updateNetworkDisplay();
+    console.log('[Mini-DeFi] App initialized');
 }
 
 function setupEventListeners() {
@@ -183,9 +190,11 @@ async function connectWallet() {
     }
 
     try {
+        console.log('[Mini-DeFi] Connecting wallet...');
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
+        console.log('[Mini-DeFi] Connected account:', accounts[0]);
 
         const address = accounts[0];
         const connectBtn = document.getElementById('connect-btn');
@@ -199,14 +208,20 @@ async function connectWallet() {
         connectBtn.disabled = true;
         connectBtn.classList.add('connected');
 
+        console.log('[Mini-DeFi] Initializing contracts...');
         await initializeContracts();
+        console.log('[Mini-DeFi] Contract initialized:', lendingPoolContract?.target);
+        
+        console.log('[Mini-DeFi] Loading assets...');
         await loadAllAssets();
+        console.log('[Mini-DeFi] Loaded', assets.length, 'assets');
+        
         await updatePortfolio();
         updateNetworkDisplay();
 
         showToast('Wallet connected successfully!', 'success');
     } catch (error) {
-        console.error('Connection error:', error);
+        console.error('[Mini-DeFi] Connection error:', error);
         showToast('Failed to connect wallet', 'error');
     }
 }
@@ -271,6 +286,7 @@ async function updateNetworkDisplay() {
 
 async function initializeContracts() {
     let poolAddress = window.deployedContracts?.lendingPool;
+    console.log('[Mini-DeFi] Using pool address:', poolAddress);
 
     if (!poolAddress) {
         poolAddress = prompt('Enter LendingPool contract address:');
@@ -281,6 +297,7 @@ async function initializeContracts() {
     }
 
     lendingPoolContract = new ethers.Contract(poolAddress, LENDING_POOL_ABI, signer);
+    console.log('[Mini-DeFi] LendingPool contract created at:', poolAddress);
 }
 
 // ============================================================================
@@ -1198,8 +1215,10 @@ function toggleChat() {
 }
 
 function saveApiKey() {
+    console.log('[Mini-DeFi] saveApiKey called');
     const input = document.getElementById('api-key-input');
     const key = input.value.trim();
+    console.log('[Mini-DeFi] Key length:', key.length);
     
     if (!key) {
         showToast('Please enter an API key', 'warning');
