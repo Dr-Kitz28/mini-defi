@@ -1079,87 +1079,232 @@ async function refreshData() {
 }
 
 // ============================================================================
-// RAG Chat Agent
+// RAG Chat Agent with OpenAI Integration
 // ============================================================================
 
-const ragKnowledgeBase = {
-    // General
-    'what is this': 'This is the Mini-DeFi Multi-Asset Lending Platform. You can deposit assets as collateral, borrow against them, and manage positions across thousands of asset classes.',
-    'how does it work': 'The platform allows you to: 1) Deposit assets to earn interest and use as collateral. 2) Borrow other assets against your collateral. 3) Repay loans with interest. 4) Withdraw your deposits. Your health factor must stay above 1.0 to avoid liquidation.',
-    
-    // Deposit
-    'how to deposit': 'To deposit: 1) Click assets in the Asset Browser to select them. 2) Adjust proportions in the Operation Panel (must total 100%). 3) Enter the total USD value. 4) Click "Execute Deposit". Your funds will be distributed across selected assets based on proportions.',
-    'deposit': 'Depositing adds your tokens to the lending pool. You earn interest on deposits and can use them as collateral for borrowing.',
-    
-    // Withdraw
-    'how to withdraw': 'To withdraw: 1) Select assets in the browser. 2) Click the "Withdraw" tab. 3) Set proportions and amount. 4) Execute. Note: You can only withdraw if your health factor stays above 1.0.',
-    'withdraw': 'Withdrawing removes your deposited tokens from the pool. Ensure you have enough remaining collateral to cover any borrows.',
-    
-    // Borrow
-    'how to borrow': 'To borrow: 1) First, deposit collateral. 2) Select assets to borrow in the browser. 3) Click "Borrow" tab. 4) Set proportions and amount. 5) Execute. Your borrow capacity depends on collateral value and factors.',
-    'borrow': 'Borrowing lets you take loans against your deposited collateral. Interest accrues on borrows. Keep your health factor above 1.0.',
-    
-    // Repay
-    'how to repay': 'To repay: 1) Select borrowed assets. 2) Click "Repay" tab. 3) Set proportions and amount. 4) Execute. This reduces your debt and improves your health factor.',
-    'repay': 'Repaying reduces your borrowed amount. You need to repay principal plus accrued interest.',
-    
-    // Health Factor
-    'health factor': 'Health Factor = (Total Collateral × Collateral Factor) / Total Borrows. If it drops below 1.0, you can be liquidated. Keep it above 1.5 for safety.',
-    'what is health factor': 'The health factor measures your loan safety. Above 1.0 = safe. Below 1.0 = liquidation risk. Higher is better.',
-    
-    // Liquidation
-    'liquidation': 'Liquidation occurs when health factor drops below 1.0. Others can repay your debt and claim your collateral at a discount.',
-    'how to avoid liquidation': 'To avoid liquidation: 1) Monitor health factor. 2) Keep it above 1.5. 3) Repay borrows if it drops. 4) Add more collateral. 5) Don\'t max out borrowing.',
-    
-    // Batch Operations
-    'batch': 'Batch operations let you act on multiple assets at once. Select assets, set proportions (must = 100%), enter total USD amount, and execute.',
-    'proportions': 'Proportions determine how your amount is distributed. They must sum to 100%. Use sliders or click "Equalize" for even distribution.',
-    
-    // Interest
-    'interest': 'Interest rates are dynamic based on utilization. Higher utilization = higher rates. Depositors earn, borrowers pay.',
-    'interest rate': 'Interest follows a kink model: low rates at low utilization, increasing sharply after optimal utilization.',
-    
-    // Assets
-    'how many assets': `The platform supports 10,000+ asset classes. Use the search and category filters to find specific assets.`,
-    'search': 'Use the search box to filter by symbol, name, or address. Use category dropdown to filter by asset type.',
-    
-    // Wallet
-    'connect wallet': 'Click "Connect Wallet" in the top right. Approve the connection in MetaMask when prompted.',
-    'wallet': 'A Web3 wallet like MetaMask is required. It holds your keys and signs transactions.',
-    
-    // Help
-    'help': 'I can help with: deposits, withdrawals, borrowing, repaying, health factors, liquidation, batch operations, and more. Just ask!',
-    'commands': 'Try: "how to deposit", "how to borrow", "what is health factor", "how to avoid liquidation", "batch operations"'
-};
+// OpenAI API configuration - User needs to set their API key
+let openaiApiKey = localStorage.getItem('openai-api-key') || '';
+
+// System prompt with comprehensive knowledge about the platform
+const SYSTEM_PROMPT = `You are an AI assistant for the Mini-DeFi Multi-Asset Lending Platform. You help users understand and use the platform effectively.
+
+## Platform Overview
+Mini-DeFi is a decentralized lending platform supporting 10,000+ asset classes. Users can:
+- Deposit assets to earn interest and use as collateral
+- Borrow assets against their collateral
+- Manage positions across multiple assets with batch operations
+- Monitor their health factor to avoid liquidation
+
+## Key Features
+
+### Asset Browser (Left Sidebar)
+- Search assets by symbol, name, or contract address
+- Filter by category: Stablecoins, Bitcoin, Ethereum, DeFi, Meme coins, L2 tokens
+- Click assets to select them for batch operations
+- Shows current price and user's deposited value
+
+### Portfolio Overview
+- Total Collateral: Sum of all deposited assets in USD
+- Total Borrowed: Sum of all borrowed assets in USD
+- Health Factor: Ratio measuring loan safety (must stay above 1.0)
+- Net Worth: Collateral minus borrowed amounts
+
+### Operations Panel
+Five operations available:
+1. **Deposit**: Supply assets to earn interest. Select assets, set proportions (must = 100%), enter USD amount, execute.
+2. **Withdraw**: Remove deposited assets. Must maintain health factor above 1.0.
+3. **Borrow**: Take loans against collateral. Interest accrues over time.
+4. **Repay**: Pay back borrowed amounts plus interest.
+5. **Liquidate**: Liquidate unhealthy positions (health factor < 1.0).
+
+### Batch Operations
+- Select multiple assets in the browser
+- Set proportion for each (must total 100%)
+- Enter total USD amount
+- Platform distributes operation across selected assets
+
+### Health Factor
+- Formula: (Total Collateral × Collateral Factor) / Total Borrows
+- Above 1.5: Safe (green)
+- 1.0 - 1.5: Caution (yellow)
+- Below 1.0: Liquidation risk (red)
+- Tips: Don't max out borrowing, monitor regularly, add collateral if dropping
+
+### Interest Rates
+- Dynamic based on utilization (borrowed / deposited)
+- Kink model: Low rates at low utilization, sharp increase after optimal point
+- Depositors earn interest, borrowers pay interest
+
+### Wallet Connection
+- Click "Connect Wallet" button
+- Approve connection in MetaMask
+- Supported networks: Ethereum, Polygon, Hardhat local
+
+## User's Current Context
+${(() => {
+    let context = '';
+    if (assets.length > 0) context += `- ${assets.length} assets loaded\n`;
+    if (selectedAssets.size > 0) context += `- ${selectedAssets.size} assets currently selected\n`;
+    return context || '- No wallet connected yet';
+})()}
+
+Be helpful, concise, and guide users step-by-step. If asked about something outside the platform, politely redirect to platform features.`;
+
+// Conversation history for context
+let chatHistory = [];
 
 function toggleChat() {
     const modal = document.getElementById('chat-modal');
     modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    
+    // Check if API key is set
+    if (modal.style.display === 'flex' && !openaiApiKey) {
+        setTimeout(() => {
+            addChatMessage('Welcome! To enable AI-powered assistance, please set your OpenAI API key using the settings button below. Your key is stored locally and never sent to our servers.', 'assistant');
+        }, 300);
+    }
 }
 
-function sendChatMessage() {
+async function sendChatMessage() {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
 
     if (!message) return;
 
-    // Add user message
+    // Add user message to UI
     addChatMessage(message, 'user');
     input.value = '';
 
-    // Generate response
-    const response = generateRagResponse(message);
-    
-    // Simulate typing delay
-    setTimeout(() => {
+    // Check for API key command
+    if (message.toLowerCase().startsWith('/setkey ')) {
+        const key = message.substring(8).trim();
+        if (key.startsWith('sk-')) {
+            openaiApiKey = key;
+            localStorage.setItem('openai-api-key', key);
+            addChatMessage('API key saved successfully! You can now chat with AI assistance.', 'assistant');
+        } else {
+            addChatMessage('Invalid API key format. OpenAI keys start with "sk-".', 'assistant');
+        }
+        return;
+    }
+
+    if (message.toLowerCase() === '/clearkey') {
+        openaiApiKey = '';
+        localStorage.removeItem('openai-api-key');
+        chatHistory = [];
+        addChatMessage('API key cleared. Using local knowledge base.', 'assistant');
+        return;
+    }
+
+    // Show typing indicator
+    const typingId = showTypingIndicator();
+
+    try {
+        let response;
+        if (openaiApiKey) {
+            response = await getOpenAIResponse(message);
+        } else {
+            response = generateLocalResponse(message);
+        }
+        
+        removeTypingIndicator(typingId);
         addChatMessage(response, 'assistant');
-    }, 500);
+    } catch (error) {
+        removeTypingIndicator(typingId);
+        console.error('Chat error:', error);
+        
+        if (error.message.includes('401')) {
+            addChatMessage('Invalid API key. Please check your OpenAI API key with /setkey YOUR_KEY', 'assistant');
+        } else if (error.message.includes('429')) {
+            addChatMessage('Rate limit reached. Please wait a moment and try again.', 'assistant');
+        } else {
+            // Fallback to local response
+            const localResponse = generateLocalResponse(message);
+            addChatMessage(localResponse, 'assistant');
+        }
+    }
+}
+
+async function getOpenAIResponse(userMessage) {
+    // Add user message to history
+    chatHistory.push({ role: 'user', content: userMessage });
+    
+    // Keep only last 10 messages for context
+    if (chatHistory.length > 20) {
+        chatHistory = chatHistory.slice(-20);
+    }
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${openaiApiKey}`
+        },
+        body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+                { role: 'system', content: SYSTEM_PROMPT },
+                ...chatHistory
+            ],
+            max_tokens: 500,
+            temperature: 0.7
+        })
+    });
+
+    if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const assistantMessage = data.choices[0].message.content;
+    
+    // Add assistant response to history
+    chatHistory.push({ role: 'assistant', content: assistantMessage });
+    
+    return assistantMessage;
+}
+
+function generateLocalResponse(query) {
+    const queryLower = query.toLowerCase();
+
+    // Local knowledge base for fallback
+    const knowledge = {
+        'deposit': 'To deposit: 1) Select assets in the Asset Browser. 2) Set proportions (must total 100%). 3) Enter USD amount in the Deposit tab. 4) Click "Execute Deposit".',
+        'withdraw': 'To withdraw: 1) Select deposited assets. 2) Switch to Withdraw tab. 3) Set proportions and amount. 4) Execute. Keep health factor above 1.0.',
+        'borrow': 'To borrow: 1) Ensure you have collateral deposited. 2) Select assets to borrow. 3) Use Borrow tab. 4) Set proportions and amount. 5) Execute.',
+        'repay': 'To repay: 1) Select borrowed assets. 2) Switch to Repay tab. 3) Set proportions and amount. 4) Execute to reduce your debt.',
+        'health factor': 'Health Factor = (Collateral × Collateral Factor) / Borrows. Keep above 1.0 to avoid liquidation. Above 1.5 is safe.',
+        'liquidation': 'Liquidation happens when health factor drops below 1.0. Others can repay your debt and claim collateral at a discount.',
+        'batch': 'Batch operations let you act on multiple assets. Select assets, set proportions (= 100%), enter amount, and execute.',
+        'connect': 'Click "Connect Wallet" in the top right corner. Approve the connection in MetaMask when prompted.',
+        'interest': 'Interest rates are dynamic based on utilization. Higher utilization = higher rates. Depositors earn, borrowers pay.',
+        'help': 'I can help with: deposits, withdrawals, borrowing, repaying, health factors, liquidation, and batch operations. What do you need?',
+        'api key': 'To enable AI chat, type: /setkey YOUR_OPENAI_API_KEY. To remove it: /clearkey. Your key is stored locally only.'
+    };
+
+    for (const [key, value] of Object.entries(knowledge)) {
+        if (queryLower.includes(key)) {
+            return value;
+        }
+    }
+
+    if (queryLower.includes('hello') || queryLower.includes('hi')) {
+        return 'Hello! I\'m your DeFi assistant. ' + (openaiApiKey ? '' : 'For full AI capabilities, set your OpenAI API key with /setkey YOUR_KEY. ') + 'How can I help you today?';
+    }
+
+    return 'I can help with deposits, withdrawals, borrowing, repaying, health factors, and more. ' + (openaiApiKey ? 'Just ask!' : 'For smarter responses, set your OpenAI API key with /setkey YOUR_KEY');
 }
 
 function addChatMessage(text, sender) {
     const container = document.getElementById('chat-messages');
     const msg = document.createElement('div');
     msg.className = `chat-message ${sender}`;
+    
+    // Convert markdown-like formatting to HTML
+    const formattedText = text
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\n/g, '<br>')
+        .replace(/(\d+)\)/g, '<br>$1)');
     
     if (sender === 'user') {
         msg.innerHTML = `
@@ -1169,7 +1314,7 @@ function addChatMessage(text, sender) {
     } else {
         msg.innerHTML = `
             <div class="message-avatar">AI</div>
-            <div class="message-content"><p>${text}</p></div>
+            <div class="message-content"><p>${formattedText}</p></div>
         `;
     }
     
@@ -1177,47 +1322,27 @@ function addChatMessage(text, sender) {
     container.scrollTop = container.scrollHeight;
 }
 
-function generateRagResponse(query) {
-    const queryLower = query.toLowerCase();
+function showTypingIndicator() {
+    const container = document.getElementById('chat-messages');
+    const indicator = document.createElement('div');
+    indicator.className = 'chat-message assistant typing-indicator';
+    indicator.id = 'typing-' + Date.now();
+    indicator.innerHTML = `
+        <div class="message-avatar">AI</div>
+        <div class="message-content">
+            <div class="typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>
+    `;
+    container.appendChild(indicator);
+    container.scrollTop = container.scrollHeight;
+    return indicator.id;
+}
 
-    // Search knowledge base
-    let bestMatch = null;
-    let bestScore = 0;
-
-    for (const [key, value] of Object.entries(ragKnowledgeBase)) {
-        const keyWords = key.toLowerCase().split(' ');
-        let score = 0;
-
-        for (const word of keyWords) {
-            if (queryLower.includes(word)) {
-                score += word.length;
-            }
-        }
-
-        if (queryLower.includes(key.toLowerCase())) {
-            score += 100;
-        }
-
-        if (score > bestScore) {
-            bestScore = score;
-            bestMatch = value;
-        }
-    }
-
-    if (bestMatch && bestScore > 2) {
-        return bestMatch;
-    }
-
-    // Fallback responses
-    if (queryLower.includes('hello') || queryLower.includes('hi')) {
-        return 'Hello! I\'m your DeFi assistant. I can help with deposits, borrowing, positions, and more. What would you like to know?';
-    }
-
-    if (queryLower.includes('thank')) {
-        return 'You\'re welcome! Let me know if you have other questions.';
-    }
-
-    return 'I\'m not sure about that. Try asking about: deposits, withdrawing, borrowing, repaying, health factor, liquidation, or batch operations. Say "help" for more options.';
+function removeTypingIndicator(id) {
+    const indicator = document.getElementById(id);
+    if (indicator) indicator.remove();
 }
 
 // ============================================================================

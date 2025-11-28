@@ -1199,6 +1199,47 @@ body {
   border-color: var(--color-primary);
 }
 
+/* Typing indicator */
+.typing-dots {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.typing-dots span {
+  width: 8px;
+  height: 8px;
+  background: var(--color-text-muted);
+  border-radius: 50%;
+  animation: typing-bounce 1.4s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* API Key hint in chat */
+.chat-api-hint {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--color-info-bg);
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.chat-api-hint code {
+  background: var(--color-bg-card);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  color: var(--color-primary);
+}
+
 /* Loading */
 .loading-state {
   display: flex;

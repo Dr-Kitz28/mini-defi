@@ -78,7 +78,7 @@
     <div id="chat-modal" class="modal-overlay" style="display: none;">
       <div class="modal modal-chat">
         <div class="modal-header">
-          <h2>AI Assistant</h2>
+          <h2>AI Assistant <span style="font-size: 0.7em; color: var(--color-text-muted);">(Powered by OpenAI)</span></h2>
           <button class="modal-close" id="chat-close" aria-label="Close">&times;</button>
         </div>
         <div class="chat-container">
@@ -86,7 +86,7 @@
             <div class="chat-message assistant">
               <div class="message-avatar">AI</div>
               <div class="message-content">
-                <p>Hello! I'm your DeFi assistant. I can help you with:</p>
+                <p>Hello! I'm your DeFi assistant powered by OpenAI. I can help you with:</p>
                 <ul>
                   <li>Understanding lending pool operations</li>
                   <li>Explaining health factors and liquidation</li>
@@ -96,6 +96,9 @@
                 <p>What would you like to know?</p>
               </div>
             </div>
+          </div>
+          <div class="chat-api-hint">
+            💡 For AI responses, set your API key: <code>/setkey sk-...</code> | Clear: <code>/clearkey</code>
           </div>
           <div class="chat-input-container">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything about DeFi..." />

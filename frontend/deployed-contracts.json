@@ -1,17 +1,907 @@
 {
   "network": "localhost",
-  "blockNumber": 20,
+  "blockNumber": 305,
   "deployerAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-  "lendingPool": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
-  "priceOracle": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
-  "assets": {
-    "TKA": {
-      "token": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
-      "irm": "0x0B306BF915C4d645ff596e518fAf3F9669b97016"
+  "deployedAt": "2025-11-28T13:57:08.688Z",
+  "totalAssets": 100,
+  "lendingPool": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
+  "priceOracle": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+  "interestRateModels": [
+    {
+      "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "Conservative"
     },
-    "TKB": {
+    {
+      "address": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "Moderate"
+    },
+    {
+      "address": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "Aggressive"
+    }
+  ],
+  "assets": {
+    "USDC": {
+      "token": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDC Token",
+      "price": "0.88731350",
+      "collateralFactor": "0.7763",
+      "liquidationBonus": "0.0954",
+      "category": "USD"
+    },
+    "USDT": {
+      "token": "0x0165878A594ca255338adfa4d48449f69242Eb8F",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDT Token",
+      "price": "0.86538512",
+      "collateralFactor": "0.8167",
+      "liquidationBonus": "0.1161",
+      "category": "USD"
+    },
+    "DAI": {
+      "token": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "DAI Token",
+      "price": "0.98639156",
+      "collateralFactor": "0.7063",
+      "liquidationBonus": "0.0487",
+      "category": "USD"
+    },
+    "BUSD": {
+      "token": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "BUSD Token",
+      "price": "0.96900333",
+      "collateralFactor": "0.6966",
+      "liquidationBonus": "0.0674",
+      "category": "USD"
+    },
+    "TUSD": {
+      "token": "0x8A791620dd6260079BF849Dc5567aDC3F2FdC318",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "TUSD Token",
+      "price": "1.13594299",
+      "collateralFactor": "0.5426",
+      "liquidationBonus": "0.0641",
+      "category": "USD"
+    },
+    "USDP": {
+      "token": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDP Token",
+      "price": "1.07032413",
+      "collateralFactor": "0.7738",
+      "liquidationBonus": "0.0365",
+      "category": "USD"
+    },
+    "GUSD": {
       "token": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-      "irm": "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1"
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "GUSD Token",
+      "price": "1.02465645",
+      "collateralFactor": "0.5214",
+      "liquidationBonus": "0.0704",
+      "category": "USD"
+    },
+    "LUSD": {
+      "token": "0xA51c1fc2f0D1a1b8494Ed1FE312d7C3a78Ed91C0",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "LUSD Token",
+      "price": "0.94485093",
+      "collateralFactor": "0.8427",
+      "liquidationBonus": "0.0616",
+      "category": "USD"
+    },
+    "FRAX": {
+      "token": "0x0DCd1Bf9A1b36cE34237eEaFef220932846BCD82",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "FRAX Token",
+      "price": "0.98410401",
+      "collateralFactor": "0.8128",
+      "liquidationBonus": "0.0405",
+      "category": "USD"
+    },
+    "MIM": {
+      "token": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "MIM Token",
+      "price": "0.87690867",
+      "collateralFactor": "0.7502",
+      "liquidationBonus": "0.1021",
+      "category": "USD"
+    },
+    "WBTC_0": {
+      "token": "0x1613beB3B2C4f22Ee086B2b38C1476A3cE7f78E8",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "WBTC Token V1",
+      "price": "44915.17774348",
+      "collateralFactor": "0.5019",
+      "liquidationBonus": "0.1002",
+      "category": "BTC"
+    },
+    "renBTC_0": {
+      "token": "0x851356ae760d987E095750cCeb3bC6014560891C",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "renBTC Token V1",
+      "price": "36015.35706800",
+      "collateralFactor": "0.5665",
+      "liquidationBonus": "0.0395",
+      "category": "BTC"
+    },
+    "sBTC_0": {
+      "token": "0xf5059a5D33d5853360D16C683c16e67980206f36",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "sBTC Token V1",
+      "price": "40760.02244955",
+      "collateralFactor": "0.7657",
+      "liquidationBonus": "0.0552",
+      "category": "BTC"
+    },
+    "tBTC_0": {
+      "token": "0x95401dc811bb5740090279Ba06cfA8fcF6113778",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "tBTC Token V1",
+      "price": "42629.58943786",
+      "collateralFactor": "0.8199",
+      "liquidationBonus": "0.1171",
+      "category": "BTC"
+    },
+    "HBTC_0": {
+      "token": "0x998abeb3E57409262aE5b751f60747921B33613E",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "HBTC Token V1",
+      "price": "40859.12814436",
+      "collateralFactor": "0.5192",
+      "liquidationBonus": "0.0933",
+      "category": "BTC"
+    },
+    "imBTC_0": {
+      "token": "0x70e0bA845a1A0F2DA3359C97E0285013525FFC49",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "imBTC Token V1",
+      "price": "32597.48020426",
+      "collateralFactor": "0.6884",
+      "liquidationBonus": "0.0787",
+      "category": "BTC"
+    },
+    "pBTC_0": {
+      "token": "0x4826533B4897376654Bb4d4AD88B7faFD0C98528",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "pBTC Token V1",
+      "price": "46815.92165469",
+      "collateralFactor": "0.6649",
+      "liquidationBonus": "0.0779",
+      "category": "BTC"
+    },
+    "oBTC_0": {
+      "token": "0x99bbA657f2BbC93c02D617f8bA121cB8Fc104Acf",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "oBTC Token V1",
+      "price": "37158.83757511",
+      "collateralFactor": "0.7280",
+      "liquidationBonus": "0.0543",
+      "category": "BTC"
+    },
+    "WETH_0": {
+      "token": "0x0E801D84Fa97b50751Dbf25036d067dCf18858bF",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "WETH Token V1",
+      "price": "2326.66397520",
+      "collateralFactor": "0.5588",
+      "liquidationBonus": "0.0353",
+      "category": "ETH"
+    },
+    "stETH_0": {
+      "token": "0x8f86403A4DE0BB5791fa46B8e795C547942fE4Cf",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "stETH Token V1",
+      "price": "2076.95844074",
+      "collateralFactor": "0.8201",
+      "liquidationBonus": "0.0637",
+      "category": "ETH"
+    },
+    "rETH_0": {
+      "token": "0x5081a39b8A5f0E35a8D959395a630b68B74Dd30f",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "rETH Token V1",
+      "price": "1915.05935831",
+      "collateralFactor": "0.8271",
+      "liquidationBonus": "0.0604",
+      "category": "ETH"
+    },
+    "cbETH_0": {
+      "token": "0x1fA02b2d6A771842690194Cf62D91bdd92BfE28d",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "cbETH Token V1",
+      "price": "1965.77146514",
+      "collateralFactor": "0.7364",
+      "liquidationBonus": "0.1192",
+      "category": "ETH"
+    },
+    "frxETH_0": {
+      "token": "0xdbC43Ba45381e02825b14322cDdd15eC4B3164E6",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "frxETH Token V1",
+      "price": "1718.40252451",
+      "collateralFactor": "0.6473",
+      "liquidationBonus": "0.0457",
+      "category": "ETH"
+    },
+    "ankrETH_": {
+      "token": "0x04C89607413713Ec9775E14b954286519d836FEf",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "ankrETH Token V1",
+      "price": "2103.60373484",
+      "collateralFactor": "0.5603",
+      "liquidationBonus": "0.0481",
+      "category": "ETH"
+    },
+    "sETH2_0": {
+      "token": "0x4C4a2f8c81640e47606d3fd77B353E87Ba015584",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "sETH2 Token V1",
+      "price": "2276.84839034",
+      "collateralFactor": "0.5039",
+      "liquidationBonus": "0.0459",
+      "category": "ETH"
+    },
+    "BETH_0": {
+      "token": "0x21dF544947ba3E8b3c32561399E88B52Dc8b2823",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "BETH Token V1",
+      "price": "1787.49314102",
+      "collateralFactor": "0.7007",
+      "liquidationBonus": "0.0501",
+      "category": "ETH"
+    },
+    "LINK_0": {
+      "token": "0x2E2Ed0Cfd3AD2f1d34481277b3204d807Ca2F8c2",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "LINK Token V1",
+      "price": "49.57296090",
+      "collateralFactor": "0.6703",
+      "liquidationBonus": "0.0339",
+      "category": "ALT"
+    },
+    "UNI_0": {
+      "token": "0xD8a5a9b31c3C0232E196d518E89Fd8bF83AcAd43",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "UNI Token V1",
+      "price": "43.82878369",
+      "collateralFactor": "0.5119",
+      "liquidationBonus": "0.0938",
+      "category": "ALT"
+    },
+    "AAVE_0": {
+      "token": "0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "AAVE Token V1",
+      "price": "58.92441347",
+      "collateralFactor": "0.7350",
+      "liquidationBonus": "0.0679",
+      "category": "ALT"
+    },
+    "CRV_0": {
+      "token": "0x51A1ceB83B83F1985a81C295d1fF28Afef186E02",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "CRV Token V1",
+      "price": "46.26737729",
+      "collateralFactor": "0.7302",
+      "liquidationBonus": "0.0569",
+      "category": "ALT"
+    },
+    "MKR_0": {
+      "token": "0xC66AB83418C20A65C3f8e83B3d11c8C3a6097b6F",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MKR Token V1",
+      "price": "104.84273040",
+      "collateralFactor": "0.8167",
+      "liquidationBonus": "0.0304",
+      "category": "RWA"
+    },
+    "COMP_0": {
+      "token": "0xf953b3A269d80e3eB0F2947630Da976B896A8C5b",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "COMP Token V1",
+      "price": "43.28999237",
+      "collateralFactor": "0.7491",
+      "liquidationBonus": "0.0611",
+      "category": "ALT"
+    },
+    "SNX_0": {
+      "token": "0xAA292E8611aDF267e563f334Ee42320aC96D0463",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "SNX Token V1",
+      "price": "46.68816137",
+      "collateralFactor": "0.7484",
+      "liquidationBonus": "0.0887",
+      "category": "ALT"
+    },
+    "YFI_0": {
+      "token": "0x5c74c94173F05dA1720953407cbb920F3DF9f887",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "YFI Token V1",
+      "price": "43.84998353",
+      "collateralFactor": "0.6221",
+      "liquidationBonus": "0.1114",
+      "category": "ALT"
+    },
+    "SUSHI_0": {
+      "token": "0x720472c8ce72c2A2D711333e064ABD3E6BbEAdd3",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "SUSHI Token V1",
+      "price": "52.50635414",
+      "collateralFactor": "0.5591",
+      "liquidationBonus": "0.0737",
+      "category": "ALT"
+    },
+    "BAL_0": {
+      "token": "0xe8D2A1E88c91DCd5433208d4152Cc4F399a7e91d",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "BAL Token V1",
+      "price": "51.88125803",
+      "collateralFactor": "0.7093",
+      "liquidationBonus": "0.0656",
+      "category": "ALT"
+    },
+    "CAKE_0": {
+      "token": "0x5067457698Fd6Fa1C6964e416b3f42713513B3dD",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "CAKE Token V1",
+      "price": "9.40554936",
+      "collateralFactor": "0.7030",
+      "liquidationBonus": "0.0998",
+      "category": "DFI"
+    },
+    "JOE_0": {
+      "token": "0x18E317A7D70d8fBf8e6E893616b52390EbBdb629",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "JOE Token V1",
+      "price": "9.72515594",
+      "collateralFactor": "0.7645",
+      "liquidationBonus": "0.1145",
+      "category": "DFI"
+    },
+    "SPELL_0": {
+      "token": "0x4b6aB5F819A515382B0dEB6935D793817bB4af28",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "SPELL Token V1",
+      "price": "11.48932787",
+      "collateralFactor": "0.6754",
+      "liquidationBonus": "0.0441",
+      "category": "DFI"
+    },
+    "CVX_0": {
+      "token": "0xCace1b78160AE76398F486c8a18044da0d66d86D",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "CVX Token V1",
+      "price": "9.68803967",
+      "collateralFactor": "0.6751",
+      "liquidationBonus": "0.0750",
+      "category": "DFI"
+    },
+    "LDO_0": {
+      "token": "0x525C7063E7C20997BaaE9bDa922159152D0e8417",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "LDO Token V1",
+      "price": "11.19499626",
+      "collateralFactor": "0.5805",
+      "liquidationBonus": "0.0433",
+      "category": "DFI"
+    },
+    "RPL_0": {
+      "token": "0x38a024C0b412B9d1db8BC398140D00F5Af3093D4",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "RPL Token V1",
+      "price": "11.70844648",
+      "collateralFactor": "0.7308",
+      "liquidationBonus": "0.0485",
+      "category": "DFI"
+    },
+    "GMX_0": {
+      "token": "0x5fc748f1FEb28d7b76fa1c6B07D8ba2d5535177c",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GMX Token V1",
+      "price": "9.15992348",
+      "collateralFactor": "0.7334",
+      "liquidationBonus": "0.0592",
+      "category": "DFI"
+    },
+    "GNS_0": {
+      "token": "0xB82008565FdC7e44609fA118A4a681E92581e680",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GNS Token V1",
+      "price": "9.29847129",
+      "collateralFactor": "0.5728",
+      "liquidationBonus": "0.0871",
+      "category": "DFI"
+    },
+    "RDNT_0": {
+      "token": "0x2a810409872AfC346F9B5b26571Fd6eC42EA4849",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "RDNT Token V1",
+      "price": "10.98109205",
+      "collateralFactor": "0.5141",
+      "liquidationBonus": "0.0326",
+      "category": "DFI"
+    },
+    "PENDLE_0": {
+      "token": "0xb9bEECD1A582768711dE1EE7B0A1d582D9d72a6C",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "PENDLE Token V1",
+      "price": "11.65093560",
+      "collateralFactor": "0.5967",
+      "liquidationBonus": "0.0319",
+      "category": "DFI"
+    },
+    "ARB_0": {
+      "token": "0x8A93d247134d91e0de6f96547cB0204e5BE8e5D8",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ARB Token V1",
+      "price": "1.21383578",
+      "collateralFactor": "0.5933",
+      "liquidationBonus": "0.0362",
+      "category": "L2"
+    },
+    "OP_0": {
+      "token": "0x40918Ba7f132E0aCba2CE4de4c4baF9BD2D7D849",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "OP Token V1",
+      "price": "1.25194633",
+      "collateralFactor": "0.7446",
+      "liquidationBonus": "0.1035",
+      "category": "L2"
+    },
+    "MATIC_0": {
+      "token": "0xF32D39ff9f6Aa7a7A64d7a4F00a54826Ef791a55",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MATIC Token V1",
+      "price": "1.33682509",
+      "collateralFactor": "0.8076",
+      "liquidationBonus": "0.0740",
+      "category": "L2"
+    },
+    "IMX_0": {
+      "token": "0x71a0b8A2245A9770A4D887cE1E4eCc6C1d4FF28c",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "IMX Token V1",
+      "price": "2.08636260",
+      "collateralFactor": "0.8281",
+      "liquidationBonus": "0.0658",
+      "category": "GAME"
+    },
+    "LRC_0": {
+      "token": "0x40a42Baf86Fc821f972Ad2aC878729063CeEF403",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "LRC Token V1",
+      "price": "1.58005063",
+      "collateralFactor": "0.7764",
+      "liquidationBonus": "0.1114",
+      "category": "L2"
+    },
+    "METIS_0": {
+      "token": "0x96F3Ce39Ad2BfDCf92C0F6E2C2CAbF83874660Fc",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "METIS Token V1",
+      "price": "1.75056294",
+      "collateralFactor": "0.7174",
+      "liquidationBonus": "0.0343",
+      "category": "L2"
+    },
+    "BOBA_0": {
+      "token": "0x986aaa537b8cc170761FDAC6aC4fc7F9d8a20A8C",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "BOBA Token V1",
+      "price": "1.66231301",
+      "collateralFactor": "0.5136",
+      "liquidationBonus": "0.0383",
+      "category": "L2"
+    },
+    "ZKS_0": {
+      "token": "0xde2Bd2ffEA002b8E84ADeA96e5976aF664115E2c",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ZKS Token V1",
+      "price": "1.46637287",
+      "collateralFactor": "0.5802",
+      "liquidationBonus": "0.0821",
+      "category": "L2"
+    },
+    "DOGE_0": {
+      "token": "0xefc1aB2475ACb7E60499Efb171D173be19928a05",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "DOGE Token V1",
+      "price": "0.00010595",
+      "collateralFactor": "0.5312",
+      "liquidationBonus": "0.0581",
+      "category": "MEME"
+    },
+    "SHIB_0": {
+      "token": "0x870526b7973b56163a6997bB7C886F5E4EA53638",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "SHIB Token V1",
+      "price": "0.00011058",
+      "collateralFactor": "0.5043",
+      "liquidationBonus": "0.0472",
+      "category": "MEME"
+    },
+    "PEPE_0": {
+      "token": "0xD49a0e9A4CD5979aE36840f542D2d7f02C4817Be",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "PEPE Token V1",
+      "price": "0.00009867",
+      "collateralFactor": "0.7409",
+      "liquidationBonus": "0.0700",
+      "category": "MEME"
+    },
+    "FLOKI_0": {
+      "token": "0xe1Fd27F4390DcBE165f4D60DBF821e4B9Bb02dEd",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "FLOKI Token V1",
+      "price": "0.00009636",
+      "collateralFactor": "0.5460",
+      "liquidationBonus": "0.0522",
+      "category": "MEME"
+    },
+    "BONK_0": {
+      "token": "0xc582Bc0317dbb0908203541971a358c44b1F3766",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "BONK Token V1",
+      "price": "0.00008558",
+      "collateralFactor": "0.5918",
+      "liquidationBonus": "0.0924",
+      "category": "MEME"
+    },
+    "WIF_0": {
+      "token": "0xB2b580ce436E6F77A5713D80887e14788Ef49c9A",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "WIF Token V1",
+      "price": "0.00011331",
+      "collateralFactor": "0.5597",
+      "liquidationBonus": "0.0504",
+      "category": "MEME"
+    },
+    "BRETT_0": {
+      "token": "0x5133BBdfCCa3Eb4F739D599ee4eC45cBCD0E16c5",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "BRETT Token V1",
+      "price": "0.00010706",
+      "collateralFactor": "0.5956",
+      "liquidationBonus": "0.1011",
+      "category": "MEME"
+    },
+    "MOG_0": {
+      "token": "0x71089Ba41e478702e1904692385Be3972B2cBf9e",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MOG Token V1",
+      "price": "0.00011788",
+      "collateralFactor": "0.5743",
+      "liquidationBonus": "0.1167",
+      "category": "MEME"
+    },
+    "ONDO_0": {
+      "token": "0x8F4ec854Dd12F1fe79500a1f53D0cbB30f9b6134",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ONDO Token V1",
+      "price": "80.86486230",
+      "collateralFactor": "0.5252",
+      "liquidationBonus": "0.0864",
+      "category": "RWA"
+    },
+    "CFG_0": {
+      "token": "0xeF31027350Be2c7439C1b0BE022d49421488b72C",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "CFG Token V1",
+      "price": "115.84406382",
+      "collateralFactor": "0.6264",
+      "liquidationBonus": "0.1036",
+      "category": "RWA"
+    },
+    "MPL_0": {
+      "token": "0x12Bcb546bC60fF39F1Adfc7cE4605d5Bd6a6A876",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MPL Token V1",
+      "price": "89.01058057",
+      "collateralFactor": "0.6400",
+      "liquidationBonus": "0.0339",
+      "category": "RWA"
+    },
+    "GFI_0": {
+      "token": "0xaC47e91215fb80462139756f43438402998E4A3a",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GFI Token V1",
+      "price": "88.76914660",
+      "collateralFactor": "0.7297",
+      "liquidationBonus": "0.0396",
+      "category": "RWA"
+    },
+    "TRU_0": {
+      "token": "0x9BcC604D4381C5b0Ad12Ff3Bf32bEdE063416BC7",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "TRU Token V1",
+      "price": "98.69304069",
+      "collateralFactor": "0.6098",
+      "liquidationBonus": "0.0409",
+      "category": "RWA"
+    },
+    "CPOOL_0": {
+      "token": "0x63fea6E447F120B8Faf85B53cdaD8348e645D80E",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "CPOOL Token V1",
+      "price": "116.57217809",
+      "collateralFactor": "0.8201",
+      "liquidationBonus": "0.0460",
+      "category": "RWA"
+    },
+    "GOLD_0": {
+      "token": "0xdFdE6B33f13de2CA1A75A6F7169f50541B14f75b",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GOLD Token V1",
+      "price": "107.27160173",
+      "collateralFactor": "0.8434",
+      "liquidationBonus": "0.1089",
+      "category": "RWA"
+    },
+    "PAXG_0": {
+      "token": "0x7B4f352Cd40114f12e82fC675b5BA8C7582FC513",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "PAXG Token V1",
+      "price": "91.58395919",
+      "collateralFactor": "0.7441",
+      "liquidationBonus": "0.0920",
+      "category": "RWA"
+    },
+    "FET_0": {
+      "token": "0xcE0066b1008237625dDDBE4a751827de037E53D2",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "FET Token V1",
+      "price": "4.18427326",
+      "collateralFactor": "0.5352",
+      "liquidationBonus": "0.0841",
+      "category": "AI"
+    },
+    "AGIX_0": {
+      "token": "0x82EdA215Fa92B45a3a76837C65Ab862b6C7564a8",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "AGIX Token V1",
+      "price": "5.65847548",
+      "collateralFactor": "0.6249",
+      "liquidationBonus": "0.0362",
+      "category": "AI"
+    },
+    "OCEAN_0": {
+      "token": "0x87006e75a5B6bE9D1bbF61AC8Cd84f05D9140589",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "OCEAN Token V1",
+      "price": "5.56163634",
+      "collateralFactor": "0.7541",
+      "liquidationBonus": "0.0653",
+      "category": "AI"
+    },
+    "NMR_0": {
+      "token": "0x51C65cd0Cdb1A8A8b79dfc2eE965B1bA0bb8fc89",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "NMR Token V1",
+      "price": "4.49386379",
+      "collateralFactor": "0.6286",
+      "liquidationBonus": "0.0940",
+      "category": "AI"
+    },
+    "GRT_0": {
+      "token": "0x8fC8CFB7f7362E44E472c690A6e025B80E406458",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GRT Token V1",
+      "price": "4.87138308",
+      "collateralFactor": "0.7475",
+      "liquidationBonus": "0.0517",
+      "category": "AI"
+    },
+    "RNDR_0": {
+      "token": "0xC7143d5bA86553C06f5730c8dC9f8187a621A8D4",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "RNDR Token V1",
+      "price": "5.15226391",
+      "collateralFactor": "0.6805",
+      "liquidationBonus": "0.0498",
+      "category": "AI"
+    },
+    "TAO_0": {
+      "token": "0x359570B3a0437805D0a71457D61AD26a28cAC9A2",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "TAO Token V1",
+      "price": "4.84811969",
+      "collateralFactor": "0.6362",
+      "liquidationBonus": "0.0849",
+      "category": "AI"
+    },
+    "ARKM_0": {
+      "token": "0xc9952Fc93Fa9bE383ccB39008c786b9f94eAc95d",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ARKM Token V1",
+      "price": "4.57111209",
+      "collateralFactor": "0.8356",
+      "liquidationBonus": "0.1082",
+      "category": "AI"
+    },
+    "AXS_0": {
+      "token": "0xDde063eBe8E85D666AD99f731B4Dbf8C98F29708",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "AXS Token V1",
+      "price": "1.80461630",
+      "collateralFactor": "0.7217",
+      "liquidationBonus": "0.0682",
+      "category": "GAME"
+    },
+    "SAND_0": {
+      "token": "0x6A59CC73e334b018C9922793d96Df84B538E6fD5",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "SAND Token V1",
+      "price": "2.39613020",
+      "collateralFactor": "0.8363",
+      "liquidationBonus": "0.0390",
+      "category": "GAME"
+    },
+    "MANA_0": {
+      "token": "0xC1e0A9DB9eA830c52603798481045688c8AE99C2",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MANA Token V1",
+      "price": "1.84497391",
+      "collateralFactor": "0.5887",
+      "liquidationBonus": "0.0731",
+      "category": "GAME"
+    },
+    "ENJ_0": {
+      "token": "0x683d9CDD3239E0e01E8dC6315fA50AD92aB71D2d",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ENJ Token V1",
+      "price": "1.79809303",
+      "collateralFactor": "0.5674",
+      "liquidationBonus": "0.1110",
+      "category": "GAME"
+    },
+    "GALA_0": {
+      "token": "0x1c9fD50dF7a4f066884b58A05D91e4b55005876A",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "GALA Token V1",
+      "price": "2.10299029",
+      "collateralFactor": "0.5648",
+      "liquidationBonus": "0.0660",
+      "category": "GAME"
+    },
+    "ILV_0": {
+      "token": "0x0fe4223AD99dF788A6Dcad148eB4086E6389cEB6",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "ILV Token V1",
+      "price": "1.97854730",
+      "collateralFactor": "0.7992",
+      "liquidationBonus": "0.0494",
+      "category": "GAME"
+    },
+    "MAGIC_0": {
+      "token": "0xb185E9f6531BA9877741022C92CE858cDCc5760E",
+      "irm": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+      "name": "MAGIC Token V1",
+      "price": "1.88783491",
+      "collateralFactor": "0.5243",
+      "liquidationBonus": "0.0393",
+      "category": "GAME"
+    },
+    "USDC_1": {
+      "token": "0x193521C8934bCF3473453AF4321911E7A89E0E12",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDC Token V2",
+      "price": "0.86969219",
+      "collateralFactor": "0.8098",
+      "liquidationBonus": "0.0499",
+      "category": "USD"
+    },
+    "USDT_1": {
+      "token": "0x9Fcca440F19c62CDF7f973eB6DDF218B15d4C71D",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDT Token V2",
+      "price": "0.97631963",
+      "collateralFactor": "0.6242",
+      "liquidationBonus": "0.0727",
+      "category": "USD"
+    },
+    "DAI_1": {
+      "token": "0xAe120F0df055428E45b264E7794A18c54a2a3fAF",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "DAI Token V2",
+      "price": "0.90932047",
+      "collateralFactor": "0.6924",
+      "liquidationBonus": "0.1034",
+      "category": "USD"
+    },
+    "BUSD_1": {
+      "token": "0xe38b6847E611e942E6c80eD89aE867F522402e80",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "BUSD Token V2",
+      "price": "0.91570454",
+      "collateralFactor": "0.7803",
+      "liquidationBonus": "0.0695",
+      "category": "USD"
+    },
+    "TUSD_1": {
+      "token": "0x2c8ED11fd7A058096F2e5828799c68BE88744E2F",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "TUSD Token V2",
+      "price": "0.85726207",
+      "collateralFactor": "0.7571",
+      "liquidationBonus": "0.0848",
+      "category": "USD"
+    },
+    "USDP_1": {
+      "token": "0x7580708993de7CA120E957A62f26A5dDD4b3D8aC",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "USDP Token V2",
+      "price": "0.86713672",
+      "collateralFactor": "0.6694",
+      "liquidationBonus": "0.0999",
+      "category": "USD"
+    },
+    "GUSD_1": {
+      "token": "0x75c68e69775fA3E9DD38eA32E554f6BF259C1135",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "GUSD Token V2",
+      "price": "1.00650178",
+      "collateralFactor": "0.5343",
+      "liquidationBonus": "0.0826",
+      "category": "USD"
+    },
+    "LUSD_1": {
+      "token": "0x572316aC11CB4bc5daf6BDae68f43EA3CCE3aE0e",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "LUSD Token V2",
+      "price": "0.80085218",
+      "collateralFactor": "0.8372",
+      "liquidationBonus": "0.0852",
+      "category": "USD"
+    },
+    "FRAX_1": {
+      "token": "0x975Ab64F4901Af5f0C96636deA0b9de3419D0c2F",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "FRAX Token V2",
+      "price": "0.95481682",
+      "collateralFactor": "0.6827",
+      "liquidationBonus": "0.0872",
+      "category": "USD"
+    },
+    "MIM_1": {
+      "token": "0x4593ed9CbE6003e687e5e77368534bb04b162503",
+      "irm": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
+      "name": "MIM Token V2",
+      "price": "1.05904883",
+      "collateralFactor": "0.6028",
+      "liquidationBonus": "0.0789",
+      "category": "USD"
+    },
+    "WBTC_1": {
+      "token": "0xCd7c00Ac6dc51e8dCc773971Ac9221cC582F3b1b",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "WBTC Token V2",
+      "price": "45465.31503934",
+      "collateralFactor": "0.5611",
+      "liquidationBonus": "0.0658",
+      "category": "BTC"
+    },
+    "renBTC_1": {
+      "token": "0x8ac87219a0F5639BC01b470F87BA2b26356CB2B9",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "renBTC Token V2",
+      "price": "44287.78372594",
+      "collateralFactor": "0.7315",
+      "liquidationBonus": "0.0837",
+      "category": "BTC"
+    },
+    "sBTC_1": {
+      "token": "0x94fFA1C7330845646CE9128450F8e6c3B5e44F86",
+      "irm": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+      "name": "sBTC Token V2",
+      "price": "43908.45786841",
+      "collateralFactor": "0.5988",
+      "liquidationBonus": "0.0517",
+      "category": "BTC"
     }
   }
 }
