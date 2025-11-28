@@ -305,7 +305,10 @@ async function initializeContracts() {
 // ============================================================================
 
 async function loadAllAssets() {
-    if (!lendingPoolContract) return;
+    if (!lendingPoolContract) {
+        console.error('[Mini-DeFi] No contract initialized');
+        return;
+    }
 
     showToast('Loading assets...', 'info');
     assets = [];
@@ -320,36 +323,69 @@ async function loadAllAssets() {
     `;
 
     try {
-        // Load assets in batches for performance
-        let index = 0;
-        const batchSize = 100;
-        let hasMore = true;
-
-        while (hasMore) {
-            const batch = [];
-            for (let i = 0; i < batchSize; i++) {
-                batch.push(loadAssetAtIndex(index + i));
-            }
-
-            const results = await Promise.allSettled(batch);
-            let loadedInBatch = 0;
-
-            for (const result of results) {
-                if (result.status === 'fulfilled' && result.value) {
-                    assets.push(result.value);
-                    loadedInBatch++;
+        // First try to use pre-loaded asset data from deployed-contracts.json (faster)
+        if (window.deployedContracts?.assets) {
+            console.log('[Mini-DeFi] Using pre-loaded asset data');
+            const assetEntries = Object.entries(window.deployedContracts.assets);
+            
+            for (const [symbol, assetInfo] of assetEntries) {
+                try {
+                    const tokenContract = new ethers.Contract(assetInfo.token, ERC20_ABI, signer);
+                    const [name, decimals, balance] = await Promise.all([
+                        tokenContract.name().catch(() => assetInfo.name || symbol),
+                        tokenContract.decimals().catch(() => 18),
+                        tokenContract.balanceOf(await signer.getAddress()).catch(() => 0n)
+                    ]);
+                    
+                    assets.push({
+                        address: assetInfo.token,
+                        symbol: symbol.replace(/_\d+$/, ''), // Remove version suffix like _0, _1
+                        name: name,
+                        decimals: Number(decimals),
+                        price: parseFloat(assetInfo.price) || 1,
+                        collateralFactor: parseFloat(assetInfo.collateralFactor) || 0.5,
+                        category: assetInfo.category || 'Other',
+                        balance: balance
+                    });
+                    
+                    updateAssetCount(assets.length);
+                } catch (err) {
+                    console.warn('[Mini-DeFi] Failed to load asset', symbol, err);
                 }
             }
+        } else {
+            // Fallback: Load from contract (slower but works without deployed-contracts.json)
+            console.log('[Mini-DeFi] Loading assets from contract');
+            let index = 0;
+            const batchSize = 50;
+            let hasMore = true;
 
-            if (loadedInBatch < batchSize) {
-                hasMore = false;
+            while (hasMore) {
+                const batch = [];
+                for (let i = 0; i < batchSize; i++) {
+                    batch.push(loadAssetAtIndex(index + i));
+                }
+
+                const results = await Promise.allSettled(batch);
+                let loadedInBatch = 0;
+
+                for (const result of results) {
+                    if (result.status === 'fulfilled' && result.value) {
+                        assets.push(result.value);
+                        loadedInBatch++;
+                    }
+                }
+
+                if (loadedInBatch < batchSize) {
+                    hasMore = false;
+                }
+
+                index += batchSize;
+                updateAssetCount(assets.length);
             }
-
-            index += batchSize;
-
-            // Update progress
-            updateAssetCount(assets.length);
         }
+
+        console.log('[Mini-DeFi] Loaded', assets.length, 'assets');
 
         // Load user positions for all assets
         await loadUserPositions();
@@ -365,7 +401,7 @@ async function loadAllAssets() {
 
         showToast(`Loaded ${assets.length} assets`, 'success');
     } catch (error) {
-        console.error('Error loading assets:', error);
+        console.error('[Mini-DeFi] Error loading assets:', error);
         showToast('Error loading assets', 'error');
         assetList.innerHTML = `
             <div class="empty-state">
@@ -1359,34 +1395,80 @@ async function getOpenAIResponse(userMessage) {
 }
 
 function generateLocalResponse(query) {
-    const queryLower = query.toLowerCase();
+    const q = query.toLowerCase();
 
-    // Local knowledge base for fallback
-    const knowledge = {
-        'deposit': 'To deposit: 1) Select assets in the Asset Browser. 2) Set proportions (must total 100%). 3) Enter USD amount in the Deposit tab. 4) Click "Execute Deposit".',
-        'withdraw': 'To withdraw: 1) Select deposited assets. 2) Switch to Withdraw tab. 3) Set proportions and amount. 4) Execute. Keep health factor above 1.0.',
-        'borrow': 'To borrow: 1) Ensure you have collateral deposited. 2) Select assets to borrow. 3) Use Borrow tab. 4) Set proportions and amount. 5) Execute.',
-        'repay': 'To repay: 1) Select borrowed assets. 2) Switch to Repay tab. 3) Set proportions and amount. 4) Execute to reduce your debt.',
-        'health factor': 'Health Factor = (Collateral × Collateral Factor) / Borrows. Keep above 1.0 to avoid liquidation. Above 1.5 is safe.',
-        'liquidation': 'Liquidation happens when health factor drops below 1.0. Others can repay your debt and claim collateral at a discount.',
-        'batch': 'Batch operations let you act on multiple assets. Select assets, set proportions (= 100%), enter amount, and execute.',
-        'connect': 'Click "Connect Wallet" in the top right corner. Approve the connection in MetaMask when prompted.',
-        'interest': 'Interest rates are dynamic based on utilization. Higher utilization = higher rates. Depositors earn, borrowers pay.',
-        'help': 'I can help with: deposits, withdrawals, borrowing, repaying, health factors, liquidation, and batch operations. What do you need?',
-        'api key': 'To enable AI chat, type: /setkey YOUR_OPENAI_API_KEY. To remove it: /clearkey. Your key is stored locally only.'
-    };
+    // Comprehensive knowledge base - no API key needed for basic help
+    const responses = [
+        // Greetings
+        { match: /^(hi|hello|hey|howdy|greetings)/i, 
+          response: "Hello! I'm your Mini-DeFi assistant. I can help you with:\n\n• **Depositing** assets to earn interest\n• **Borrowing** against your collateral\n• **Understanding** health factors & liquidation\n• **Managing** your DeFi portfolio\n\nWhat would you like to know?" },
+        
+        // Deposit questions
+        { match: /how.*(deposit|supply|add funds|put money)/i,
+          response: "**How to Deposit:**\n\n1) **Select Assets** - Click on assets in the left sidebar (Asset Browser)\n2) **Set Proportions** - Adjust how much goes to each asset (must total 100%)\n3) **Enter Amount** - Type the USD value in the Deposit panel\n4) **Execute** - Click 'Execute Deposit' and confirm in MetaMask\n\n💡 Tip: Use 'Equalize' to split evenly across selected assets!" },
+        
+        // Withdraw questions  
+        { match: /how.*(withdraw|remove|take out)/i,
+          response: "**How to Withdraw:**\n\n1) Select assets you've deposited in the Asset Browser\n2) Click the **Withdraw** tab in the Operation Panel\n3) Set proportions and enter amount to withdraw\n4) Click 'Execute Withdraw'\n\n⚠️ **Important:** Withdrawing reduces collateral. Keep your Health Factor above 1.0 to avoid liquidation!" },
+        
+        // Borrow questions
+        { match: /how.*(borrow|take loan|get loan)/i,
+          response: "**How to Borrow:**\n\n1) First, deposit assets as collateral\n2) Select assets you want to borrow from Asset Browser\n3) Click the **Borrow** tab\n4) Enter amount (limited by your collateral × collateral factor)\n5) Execute and confirm\n\n💡 Your borrowing power = Collateral Value × Collateral Factor" },
+        
+        // Repay questions
+        { match: /how.*(repay|pay back|return)/i,
+          response: "**How to Repay:**\n\n1) Select the assets you borrowed\n2) Click the **Repay** tab\n3) Set the amount to repay (including interest owed)\n4) Execute the transaction\n\n💡 Repaying debt improves your Health Factor and frees up borrowing capacity." },
+        
+        // Health Factor
+        { match: /health factor|health score/i,
+          response: "**Health Factor Explained:**\n\n📊 **Formula:** Health Factor = (Collateral × Collateral Factor) ÷ Total Borrows\n\n• **Above 1.5** ✅ Safe zone\n• **1.0 - 1.5** ⚠️ Caution zone\n• **Below 1.0** 🚨 Liquidation risk!\n\n**Example:** $1000 collateral with 75% factor, $500 borrowed = HF of 1.5" },
+        
+        // Liquidation
+        { match: /liquidat/i,
+          response: "**Liquidation Explained:**\n\n🚨 Liquidation occurs when your Health Factor drops below 1.0.\n\n**What happens:**\n• Anyone can repay part of your debt\n• They receive your collateral at a discount (liquidation bonus)\n• You lose collateral but reduce debt\n\n**How to avoid:**\n• Keep Health Factor above 1.5\n• Monitor asset prices\n• Repay debt if HF drops" },
+        
+        // Collateral Factor
+        { match: /collateral factor/i,
+          response: "**Collateral Factor:**\n\nThe collateral factor (50-85%) determines how much you can borrow against an asset.\n\n**Example:**\n• Deposit $1000 USDC (75% collateral factor)\n• Maximum borrow = $1000 × 0.75 = $750\n\n💡 Stablecoins typically have higher factors (safer), volatile assets have lower factors." },
+        
+        // Interest rates
+        { match: /interest|rate|apy|yield/i,
+          response: "**Interest Rates:**\n\n📈 Interest rates are dynamic based on **utilization** (borrowed/deposited):\n\n• **Low utilization** → Lower rates\n• **High utilization** → Higher rates\n\n**Depositors** earn interest (supply APY)\n**Borrowers** pay interest (borrow APY)\n\nRates adjust automatically to balance supply and demand." },
+        
+        // Batch operations
+        { match: /batch|multiple|several assets/i,
+          response: "**Batch Operations:**\n\nSelect multiple assets to deposit/withdraw/borrow/repay in one transaction!\n\n1) Click multiple assets in the Asset Browser\n2) Set proportions for each (total must = 100%)\n3) Click 'Equalize' to split evenly\n4) Enter total amount and execute\n\n💡 Saves gas vs. individual transactions!" },
+        
+        // Connect wallet
+        { match: /connect|wallet|metamask/i,
+          response: "**Connecting Your Wallet:**\n\n1) Click **'Connect Wallet'** in the top-right corner\n2) Select MetaMask (or your wallet)\n3) Approve the connection request\n\n**Network:** Make sure you're on the correct network (Hardhat Local for testing)\n\n🔑 Your wallet address will appear once connected." },
+        
+        // What is this / getting started
+        { match: /what is|getting started|new here|explain|tutorial/i,
+          response: "**Welcome to Mini-DeFi!**\n\nThis is a decentralized lending platform where you can:\n\n💰 **Deposit** assets to earn interest\n🏦 **Borrow** against your deposits\n📊 **Manage** a multi-asset portfolio\n\n**Getting Started:**\n1) Connect your wallet\n2) Deposit some assets as collateral\n3) (Optional) Borrow against your collateral\n4) Monitor your Health Factor\n\nAsk me about any specific feature!" },
+        
+        // Assets / tokens
+        { match: /asset|token|coin|which/i,
+          response: "**Available Assets:**\n\nThe platform supports 100+ assets across categories:\n\n• **USD Stablecoins:** USDC, USDT, DAI, etc.\n• **BTC Derivatives:** WBTC, renBTC, etc.\n• **ETH Derivatives:** WETH, stETH, rETH, etc.\n• **DeFi Tokens:** AAVE, UNI, CRV, etc.\n• **Layer 2:** ARB, OP, MATIC, etc.\n\nUse the category filter to browse, or search by name!" },
+        
+        // Price / oracle
+        { match: /price|oracle|value/i,
+          response: "**Price Feeds:**\n\nAsset prices come from our Price Oracle contract. Prices update when you:\n\n• Deposit or withdraw\n• Borrow or repay\n• Refresh the dashboard\n\nPrices affect your collateral value and Health Factor, so monitor them closely!" },
+        
+        // Thanks
+        { match: /thank|thanks|thx/i,
+          response: "You're welcome! 😊 Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" }
+    ];
 
-    for (const [key, value] of Object.entries(knowledge)) {
-        if (queryLower.includes(key)) {
-            return value;
+    // Find matching response
+    for (const item of responses) {
+        if (item.match.test(q)) {
+            return item.response;
         }
     }
 
-    if (queryLower.includes('hello') || queryLower.includes('hi')) {
-        return 'Hello! I\'m your DeFi assistant. ' + (openaiApiKey ? '' : 'For full AI capabilities, set your OpenAI API key with /setkey YOUR_KEY. ') + 'How can I help you today?';
-    }
-
-    return 'I can help with deposits, withdrawals, borrowing, repaying, health factors, and more. ' + (openaiApiKey ? 'Just ask!' : 'For smarter responses, set your OpenAI API key with /setkey YOUR_KEY');
+    // Default response with suggestions
+    return "I can help you with:\n\n• **\"How do I deposit?\"** - Step-by-step deposit guide\n• **\"What is health factor?\"** - Understand liquidation risk\n• **\"How to borrow?\"** - Borrowing tutorial\n• **\"Getting started\"** - Platform overview\n\nJust ask a question and I'll guide you!";
 }
 
 function addChatMessage(text, sender) {
