@@ -97,8 +97,13 @@
               </div>
             </div>
           </div>
-          <div class="chat-api-hint">
-            💡 For AI responses, set your API key: <code>/setkey sk-...</code> | Clear: <code>/clearkey</code>
+          <div class="chat-api-settings" id="chat-api-settings">
+            <div class="api-key-row">
+              <input type="password" id="api-key-input" class="api-key-input" placeholder="Enter OpenAI API key (sk-...)" />
+              <button class="btn btn-sm btn-primary" id="save-api-key">Save</button>
+              <button class="btn btn-sm btn-ghost" id="clear-api-key" title="Clear API key">✕</button>
+            </div>
+            <div class="api-key-status" id="api-key-status">No API key set - using basic responses</div>
           </div>
           <div class="chat-input-container">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything about DeFi..." />

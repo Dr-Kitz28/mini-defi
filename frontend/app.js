@@ -47,10 +47,21 @@ const PRICE_ORACLE_ABI = [
 // Initialization
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-    setupEventListeners();
-});
+function _initWhenReady() {
+    // Ensure initialization runs even if this script is loaded after DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+    } else {
+        // DOM already ready
+        initializeApp();
+        setupEventListeners();
+    }
+}
+
+_initWhenReady();
 
 async function initializeApp() {
     // Load contract addresses
@@ -119,6 +130,16 @@ function setupEventListeners() {
     document.getElementById('chat-input')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendChatMessage();
     });
+
+    // API Key UI
+    document.getElementById('save-api-key')?.addEventListener('click', saveApiKey);
+    document.getElementById('clear-api-key')?.addEventListener('click', clearApiKey);
+    document.getElementById('api-key-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveApiKey();
+    });
+    
+    // Initialize API key status display
+    updateApiKeyStatus();
 
     // Help modal
     document.getElementById('help-btn')?.addEventListener('click', showHelp);
@@ -531,8 +552,16 @@ function renderAssetList(assetList) {
 // ============================================================================
 
 function toggleAssetSelection(address) {
+    if (!signer) {
+        showToast('Please connect your wallet first', 'warning');
+        return;
+    }
+    
     const asset = assets.find(a => a.address === address);
-    if (!asset) return;
+    if (!asset) {
+        showToast('Asset not found. Try refreshing.', 'error');
+        return;
+    }
 
     if (selectedAssets.has(address)) {
         selectedAssets.delete(address);
@@ -1157,11 +1186,59 @@ function toggleChat() {
     const modal = document.getElementById('chat-modal');
     modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
     
-    // Check if API key is set
-    if (modal.style.display === 'flex' && !openaiApiKey) {
-        setTimeout(() => {
-            addChatMessage('Welcome! To enable AI-powered assistance, please set your OpenAI API key using the settings button below. Your key is stored locally and never sent to our servers.', 'assistant');
-        }, 300);
+    // Update API key status when opening
+    if (modal.style.display === 'flex') {
+        updateApiKeyStatus();
+        if (!openaiApiKey) {
+            setTimeout(() => {
+                addChatMessage('Welcome! To enable AI-powered assistance, enter your OpenAI API key in the settings above. Your key is stored locally only.', 'assistant');
+            }, 300);
+        }
+    }
+}
+
+function saveApiKey() {
+    const input = document.getElementById('api-key-input');
+    const key = input.value.trim();
+    
+    if (!key) {
+        showToast('Please enter an API key', 'warning');
+        return;
+    }
+    
+    if (!key.startsWith('sk-')) {
+        showToast('Invalid API key format. Keys start with "sk-"', 'error');
+        return;
+    }
+    
+    openaiApiKey = key;
+    localStorage.setItem('openai-api-key', key);
+    input.value = '';
+    updateApiKeyStatus();
+    addChatMessage('✓ API key saved! You now have full AI assistance.', 'assistant');
+    showToast('API key saved successfully', 'success');
+}
+
+function clearApiKey() {
+    openaiApiKey = '';
+    localStorage.removeItem('openai-api-key');
+    chatHistory = [];
+    document.getElementById('api-key-input').value = '';
+    updateApiKeyStatus();
+    addChatMessage('API key cleared. Using basic responses.', 'assistant');
+    showToast('API key cleared', 'info');
+}
+
+function updateApiKeyStatus() {
+    const statusEl = document.getElementById('api-key-status');
+    if (!statusEl) return;
+    
+    if (openaiApiKey) {
+        statusEl.textContent = '✓ API key connected - Full AI assistance enabled';
+        statusEl.className = 'api-key-status connected';
+    } else {
+        statusEl.textContent = 'No API key set - Using basic responses';
+        statusEl.className = 'api-key-status';
     }
 }
 
@@ -1175,12 +1252,13 @@ async function sendChatMessage() {
     addChatMessage(message, 'user');
     input.value = '';
 
-    // Check for API key command
+    // Legacy command support (still works)
     if (message.toLowerCase().startsWith('/setkey ')) {
         const key = message.substring(8).trim();
         if (key.startsWith('sk-')) {
             openaiApiKey = key;
             localStorage.setItem('openai-api-key', key);
+            updateApiKeyStatus();
             addChatMessage('API key saved successfully! You can now chat with AI assistance.', 'assistant');
         } else {
             addChatMessage('Invalid API key format. OpenAI keys start with "sk-".', 'assistant');
@@ -1189,10 +1267,7 @@ async function sendChatMessage() {
     }
 
     if (message.toLowerCase() === '/clearkey') {
-        openaiApiKey = '';
-        localStorage.removeItem('openai-api-key');
-        chatHistory = [];
-        addChatMessage('API key cleared. Using local knowledge base.', 'assistant');
+        clearApiKey();
         return;
     }
 
