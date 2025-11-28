@@ -980,6 +980,7 @@ body {
 .modal-chat {
   max-width: 480px;
   height: 600px;
+  overflow: visible;
 }
 
 .modal-header {
@@ -1118,7 +1119,9 @@ body {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: calc(100% - 65px);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .chat-messages {
@@ -1182,6 +1185,9 @@ body {
   gap: var(--spacing-sm);
   padding: var(--spacing-md) var(--spacing-lg);
   border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .chat-input {
@@ -1227,6 +1233,9 @@ body {
   padding: var(--spacing-sm) var(--spacing-md);
   background: var(--color-bg-elevated);
   border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
 }
 
 .api-key-row {
