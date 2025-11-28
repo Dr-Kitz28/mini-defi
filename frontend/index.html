@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Mini DeFi | Multi-Asset Lending Pool</title>
+    <title>Mini DeFi | Multi-Asset Lending Platform</title>
     <link rel="stylesheet" href="styles.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,7 +12,7 @@
   <body>
     <!-- Help Modal -->
     <div id="help-modal" class="modal-overlay" style="display: none;">
-      <div class="modal">
+      <div class="modal modal-lg">
         <div class="modal-header">
           <h2>Welcome to Mini DeFi</h2>
           <button class="modal-close" id="help-close" aria-label="Close">&times;</button>
@@ -20,7 +20,7 @@
         <div class="modal-body">
           <div class="help-section">
             <h3>Getting Started</h3>
-            <p>Mini DeFi is a multi-asset lending pool where you can deposit crypto assets to earn interest, or borrow against your collateral.</p>
+            <p>Mini DeFi is a multi-asset lending platform supporting thousands of assets. You can deposit assets to earn interest, borrow against your collateral, and manage your portfolio with advanced batch operations.</p>
           </div>
           
           <div class="help-steps">
@@ -28,31 +28,28 @@
               <div class="step-number">1</div>
               <div class="step-content">
                 <h4>Connect Your Wallet</h4>
-                <p>Click the "Connect Wallet" button and approve the connection in MetaMask. Make sure you're on the correct network.</p>
+                <p>Click "Connect Wallet" and approve the connection in MetaMask.</p>
               </div>
             </div>
-            
             <div class="help-step">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h4>Deposit Assets</h4>
-                <p>Select an asset from the dropdown, enter the amount you want to deposit, and confirm the transaction. Your deposit earns interest over time.</p>
+                <h4>Browse Assets</h4>
+                <p>Use the search and filters to find assets. Click assets to add them to your selection basket.</p>
               </div>
             </div>
-            
             <div class="help-step">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h4>Borrow Against Collateral</h4>
-                <p>Once you've deposited collateral, you can borrow other assets up to your collateral limit. Monitor your health factor to avoid liquidation.</p>
+                <h4>Set Proportions</h4>
+                <p>In the Operation Panel, set the percentage allocation for each selected asset.</p>
               </div>
             </div>
-            
             <div class="help-step">
               <div class="step-number">4</div>
               <div class="step-content">
-                <h4>Repay &amp; Withdraw</h4>
-                <p>Repay your borrowed amount plus interest anytime. Withdraw your deposits when they're not being used as collateral.</p>
+                <h4>Execute Operations</h4>
+                <p>Choose an operation (Deposit, Withdraw, Borrow, Repay, Liquidate) and execute with your proportions.</p>
               </div>
             </div>
           </div>
@@ -60,10 +57,10 @@
           <div class="help-section">
             <h3>Key Concepts</h3>
             <ul class="help-list">
-              <li><strong>Health Factor:</strong> Ratio of collateral to debt. Below 1.0 means you can be liquidated.</li>
-              <li><strong>Collateral Factor:</strong> Percentage of deposit value you can borrow against.</li>
-              <li><strong>Utilization:</strong> Percentage of pool deposits currently borrowed.</li>
-              <li><strong>Liquidation:</strong> If health factor drops below 1.0, others can repay your debt and claim collateral with a bonus.</li>
+              <li><strong>Health Factor:</strong> Ratio of collateral to debt. Below 1.0 means liquidation risk.</li>
+              <li><strong>Collateral Factor:</strong> Max % of deposit value you can borrow against.</li>
+              <li><strong>Batch Operations:</strong> Execute operations across multiple assets at once.</li>
+              <li><strong>Proportions:</strong> Distribute your operation amount across selected assets.</li>
             </ul>
           </div>
         </div>
@@ -73,6 +70,45 @@
             <span>Don't show this again</span>
           </label>
           <button class="btn btn-primary" id="help-got-it">Got it</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Chat Modal -->
+    <div id="chat-modal" class="modal-overlay" style="display: none;">
+      <div class="modal modal-chat">
+        <div class="modal-header">
+          <h2>AI Assistant <span style="font-size: 0.7em; color: var(--color-text-muted);">(Powered by OpenAI)</span></h2>
+          <button class="modal-close" id="chat-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="chat-container">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-message assistant">
+              <div class="message-avatar">AI</div>
+              <div class="message-content">
+                <p>Hello! I'm your DeFi assistant powered by OpenAI. I can help you with:</p>
+                <ul>
+                  <li>Understanding lending pool operations</li>
+                  <li>Explaining health factors and liquidation</li>
+                  <li>Guiding you through deposits and borrows</li>
+                  <li>Answering questions about specific assets</li>
+                </ul>
+                <p>What would you like to know?</p>
+              </div>
+            </div>
+          </div>
+          <div class="chat-api-hint">
+            💡 For AI responses, set your API key: <code>/setkey sk-...</code> | Clear: <code>/clearkey</code>
+          </div>
+          <div class="chat-input-container">
+            <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything about DeFi..." />
+            <button class="btn btn-primary" id="chat-send">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"/>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -96,9 +132,17 @@
             </svg>
           </div>
           <span class="brand-text">Mini DeFi</span>
+          <span class="asset-count" id="asset-count">0 assets</span>
         </div>
         
         <div class="nav-actions">
+          <button class="btn btn-ghost" id="chat-btn" title="AI Assistant">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            <span class="btn-text">AI Help</span>
+          </button>
+          
           <button class="btn btn-ghost" id="help-btn" title="Help">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/>
@@ -124,238 +168,266 @@
       </nav>
 
       <!-- Main Content -->
-      <main class="main-content">
-        <!-- Status Toast -->
-        <div id="status-toast" class="toast" style="display: none;">
-          <span class="toast-icon"></span>
-          <span class="toast-message"></span>
-          <button class="toast-close">&times;</button>
-        </div>
-
-        <!-- Account Overview Section -->
-        <section class="section">
-          <div class="section-header">
-            <h2>Account Overview</h2>
-            <button class="btn btn-secondary btn-sm" id="refresh-stats">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M23 4v6h-6M1 20v-6h6"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-              </svg>
-              <span>Refresh</span>
-            </button>
+      <div class="main-layout">
+        <!-- Left Sidebar - Asset Browser -->
+        <aside class="sidebar">
+          <div class="sidebar-header">
+            <h3>Asset Browser</h3>
+            <span class="badge" id="filtered-count">0</span>
           </div>
           
-          <div class="overview-grid">
-            <div class="overview-card">
-              <div class="overview-label">Total Collateral</div>
-              <div class="overview-value" id="total-collateral">$0.00</div>
-            </div>
-            <div class="overview-card">
-              <div class="overview-label">Total Borrowed</div>
-              <div class="overview-value" id="total-borrowed">$0.00</div>
-            </div>
-            <div class="overview-card">
-              <div class="overview-label">Health Factor</div>
-              <div class="overview-value health-good" id="health-factor">-</div>
-            </div>
-            <div class="overview-card">
-              <div class="overview-label">Net Worth</div>
-              <div class="overview-value" id="net-worth">$0.00</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Asset Statistics -->
-        <section class="section">
-          <div class="section-header">
-            <h2>Markets</h2>
-          </div>
-          <div class="markets-table-wrapper">
-            <table class="markets-table" id="markets-table">
-              <thead>
-                <tr>
-                  <th>Asset</th>
-                  <th>Pool Deposits</th>
-                  <th>Pool Borrows</th>
-                  <th>Utilization</th>
-                  <th>Your Balance</th>
-                  <th>Your Shares</th>
-                  <th>Your Debt</th>
-                </tr>
-              </thead>
-              <tbody id="markets-tbody">
-                <tr class="empty-row">
-                  <td colspan="7">Connect wallet to view markets</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
-
-        <!-- Actions Grid -->
-        <section class="section">
-          <div class="section-header">
-            <h2>Actions</h2>
+          <div class="search-box">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="asset-search" placeholder="Search assets..." class="search-input" />
           </div>
           
-          <div class="actions-grid">
-            <!-- Deposit Card -->
-            <div class="action-card">
-              <div class="action-header">
-                <div class="action-icon deposit">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M5 12l7 7 7-7"/>
-                  </svg>
-                </div>
-                <h3>Deposit</h3>
-              </div>
-              <p class="action-desc">Supply assets to earn interest</p>
-              <div class="action-form">
-                <div class="form-group">
-                  <label>Asset</label>
-                  <select id="deposit-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Amount</label>
-                  <div class="input-with-max">
-                    <input id="deposit-amount" type="number" min="0" step="any" placeholder="0.00" class="form-input" />
-                    <button class="btn-max" data-target="deposit">MAX</button>
-                  </div>
-                </div>
-                <button class="btn btn-primary btn-full" id="deposit-btn">Deposit</button>
-              </div>
-            </div>
-
-            <!-- Withdraw Card -->
-            <div class="action-card">
-              <div class="action-header">
-                <div class="action-icon withdraw">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 19V5M5 12l7-7 7 7"/>
-                  </svg>
-                </div>
-                <h3>Withdraw</h3>
-              </div>
-              <p class="action-desc">Withdraw your supplied assets</p>
-              <div class="action-form">
-                <div class="form-group">
-                  <label>Asset</label>
-                  <select id="withdraw-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Shares</label>
-                  <div class="input-with-max">
-                    <input id="withdraw-amount" type="number" min="0" step="any" placeholder="0.00" class="form-input" />
-                    <button class="btn-max" data-target="withdraw">MAX</button>
-                  </div>
-                </div>
-                <button class="btn btn-primary btn-full" id="withdraw-btn">Withdraw</button>
-              </div>
-            </div>
-
-            <!-- Borrow Card -->
-            <div class="action-card">
-              <div class="action-header">
-                <div class="action-icon borrow">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/>
-                    <path d="M12 9v6M9 12h6"/>
-                  </svg>
-                </div>
-                <h3>Borrow</h3>
-              </div>
-              <p class="action-desc">Borrow against your collateral</p>
-              <div class="action-form">
-                <div class="form-group">
-                  <label>Asset</label>
-                  <select id="borrow-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Amount</label>
-                  <input id="borrow-amount" type="number" min="0" step="any" placeholder="0.00" class="form-input" />
-                </div>
-                <button class="btn btn-primary btn-full" id="borrow-btn">Borrow</button>
-              </div>
-            </div>
-
-            <!-- Repay Card -->
-            <div class="action-card">
-              <div class="action-header">
-                <div class="action-icon repay">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12"/>
-                  </svg>
-                </div>
-                <h3>Repay</h3>
-              </div>
-              <p class="action-desc">Repay your borrowed assets</p>
-              <div class="action-form">
-                <div class="form-group">
-                  <label>Asset</label>
-                  <select id="repay-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Amount</label>
-                  <div class="input-with-max">
-                    <input id="repay-amount" type="number" min="0" step="any" placeholder="0.00" class="form-input" />
-                    <button class="btn-max" data-target="repay">MAX</button>
-                  </div>
-                </div>
-                <button class="btn btn-primary btn-full" id="repay-btn">Repay</button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Liquidation Section -->
-        <section class="section">
-          <div class="section-header">
-            <h2>Liquidation</h2>
-            <span class="badge badge-warning">Advanced</span>
+          <div class="filter-row">
+            <select id="category-filter" class="filter-select">
+              <option value="">All Categories</option>
+              <option value="USD">Stablecoins</option>
+              <option value="BTC">Bitcoin</option>
+              <option value="ETH">Ethereum</option>
+              <option value="ALT">DeFi Blue Chips</option>
+              <option value="DFI">DeFi Tokens</option>
+              <option value="L2">Layer 2</option>
+              <option value="MEME">Meme Coins</option>
+              <option value="RWA">Real World Assets</option>
+              <option value="AI">AI Tokens</option>
+              <option value="GAME">Gaming</option>
+            </select>
           </div>
           
-          <div class="liquidation-card">
-            <p class="liquidation-info">Liquidate undercollateralized positions to earn a bonus. The borrower's health factor must be below 1.0.</p>
-            
-            <div class="liquidation-form">
-              <div class="form-row">
-                <div class="form-group">
-                  <label>Borrower Address</label>
-                  <input id="liquidate-borrower" type="text" placeholder="0x..." class="form-input" />
-                </div>
-              </div>
-              
-              <div class="form-row form-row-3">
-                <div class="form-group">
-                  <label>Debt Asset</label>
-                  <select id="liquidate-borrow-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Collateral Asset</label>
-                  <select id="liquidate-collateral-asset" class="form-select"></select>
-                </div>
-                <div class="form-group">
-                  <label>Repay Amount</label>
-                  <input id="liquidate-amount" type="number" min="0" step="any" placeholder="0.00" class="form-input" />
-                </div>
-              </div>
-              
-              <button class="btn btn-warning" id="liquidate-btn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                  <line x1="12" y1="9" x2="12" y2="13"/>
-                  <line x1="12" y1="17" x2="12.01" y2="17"/>
+          <div class="asset-list" id="asset-list">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Loading assets...</p>
+            </div>
+          </div>
+          
+          <div class="sidebar-footer">
+            <button class="btn btn-secondary btn-sm btn-full" id="select-all-btn">Select All Visible</button>
+            <button class="btn btn-ghost btn-sm btn-full" id="clear-selection-btn">Clear Selection</button>
+          </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+          <!-- Status Toast -->
+          <div id="status-toast" class="toast" style="display: none;">
+            <span class="toast-icon"></span>
+            <span class="toast-message"></span>
+            <button class="toast-close">&times;</button>
+          </div>
+
+          <!-- Account Overview -->
+          <section class="section">
+            <div class="section-header">
+              <h2>Portfolio Overview</h2>
+              <button class="btn btn-secondary btn-sm" id="refresh-stats">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6M1 20v-6h6"/>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
                 </svg>
-                <span>Execute Liquidation</span>
+                <span>Refresh</span>
               </button>
             </div>
-          </div>
-        </section>
-      </main>
+            
+            <div class="overview-grid">
+              <div class="overview-card">
+                <div class="overview-label">Total Collateral</div>
+                <div class="overview-value" id="total-collateral">$0.00</div>
+              </div>
+              <div class="overview-card">
+                <div class="overview-label">Total Borrowed</div>
+                <div class="overview-value" id="total-borrowed">$0.00</div>
+              </div>
+              <div class="overview-card">
+                <div class="overview-label">Health Factor</div>
+                <div class="overview-value health-good" id="health-factor">-</div>
+              </div>
+              <div class="overview-card">
+                <div class="overview-label">Net Worth</div>
+                <div class="overview-value" id="net-worth">$0.00</div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Selected Assets & Operations -->
+          <section class="section">
+            <div class="section-header">
+              <h2>Operation Panel</h2>
+              <div class="operation-tabs" id="operation-tabs">
+                <button class="tab-btn active" data-op="deposit">Deposit</button>
+                <button class="tab-btn" data-op="withdraw">Withdraw</button>
+                <button class="tab-btn" data-op="borrow">Borrow</button>
+                <button class="tab-btn" data-op="repay">Repay</button>
+                <button class="tab-btn" data-op="liquidate">Liquidate</button>
+              </div>
+            </div>
+
+            <div class="operation-panel">
+              <!-- Selected Assets -->
+              <div class="selected-assets-panel">
+                <div class="panel-header">
+                  <h4>Selected Assets</h4>
+                  <span class="selected-count" id="selected-count">0 selected</span>
+                </div>
+                
+                <div class="selected-assets-list" id="selected-assets-list">
+                  <div class="empty-state">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                      <rect x="3" y="3" width="18" height="18" rx="2"/>
+                      <path d="M12 8v8M8 12h8"/>
+                    </svg>
+                    <p>Click assets in the browser to add them here</p>
+                  </div>
+                </div>
+                
+                <div class="proportion-controls">
+                  <div class="proportion-header">
+                    <span>Total Allocation</span>
+                    <span class="allocation-total" id="allocation-total">0%</span>
+                  </div>
+                  <div class="proportion-bar">
+                    <div class="proportion-fill" id="proportion-fill" style="width: 0%"></div>
+                  </div>
+                  <div class="proportion-actions">
+                    <button class="btn btn-ghost btn-sm" id="equalize-btn">Equalize</button>
+                    <button class="btn btn-ghost btn-sm" id="reset-proportions-btn">Reset</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Operation Form -->
+              <div class="operation-form-panel">
+                <div class="operation-form" id="operation-form">
+                  <!-- Deposit Form -->
+                  <div class="form-section" id="form-deposit">
+                    <h4>Deposit Assets</h4>
+                    <p class="form-desc">Supply assets to earn interest. Your deposits are distributed across selected assets based on proportions.</p>
+                    <div class="form-group">
+                      <label>Total Amount (USD Value)</label>
+                      <div class="input-with-unit">
+                        <span class="unit">$</span>
+                        <input type="number" id="deposit-total" min="0" step="any" placeholder="0.00" class="form-input" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="execute-deposit">Execute Deposit</button>
+                  </div>
+
+                  <!-- Withdraw Form -->
+                  <div class="form-section" id="form-withdraw" style="display: none;">
+                    <h4>Withdraw Assets</h4>
+                    <p class="form-desc">Withdraw your supplied assets. Amount distributed based on proportions.</p>
+                    <div class="form-group">
+                      <label>Total Amount (USD Value)</label>
+                      <div class="input-with-unit">
+                        <span class="unit">$</span>
+                        <input type="number" id="withdraw-total" min="0" step="any" placeholder="0.00" class="form-input" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="execute-withdraw">Execute Withdraw</button>
+                  </div>
+
+                  <!-- Borrow Form -->
+                  <div class="form-section" id="form-borrow" style="display: none;">
+                    <h4>Borrow Assets</h4>
+                    <p class="form-desc">Borrow against your collateral. Distributed based on proportions.</p>
+                    <div class="form-group">
+                      <label>Total Amount (USD Value)</label>
+                      <div class="input-with-unit">
+                        <span class="unit">$</span>
+                        <input type="number" id="borrow-total" min="0" step="any" placeholder="0.00" class="form-input" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="execute-borrow">Execute Borrow</button>
+                  </div>
+
+                  <!-- Repay Form -->
+                  <div class="form-section" id="form-repay" style="display: none;">
+                    <h4>Repay Debt</h4>
+                    <p class="form-desc">Repay borrowed assets. Distributed based on proportions.</p>
+                    <div class="form-group">
+                      <label>Total Amount (USD Value)</label>
+                      <div class="input-with-unit">
+                        <span class="unit">$</span>
+                        <input type="number" id="repay-total" min="0" step="any" placeholder="0.00" class="form-input" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary btn-full" id="execute-repay">Execute Repay</button>
+                  </div>
+
+                  <!-- Liquidate Form -->
+                  <div class="form-section" id="form-liquidate" style="display: none;">
+                    <h4>Liquidate Position</h4>
+                    <p class="form-desc">Liquidate undercollateralized positions. Select debt assets and collateral to seize.</p>
+                    <div class="form-group">
+                      <label>Borrower Address</label>
+                      <input type="text" id="liquidate-borrower" placeholder="0x..." class="form-input" />
+                    </div>
+                    <div class="form-row">
+                      <div class="form-group">
+                        <label>Debt Asset</label>
+                        <select id="liquidate-debt-asset" class="form-select"></select>
+                      </div>
+                      <div class="form-group">
+                        <label>Collateral Asset</label>
+                        <select id="liquidate-collateral-asset" class="form-select"></select>
+                      </div>
+                    </div>
+                    <div class="form-group">
+                      <label>Repay Amount</label>
+                      <input type="number" id="liquidate-amount" min="0" step="any" placeholder="0.00" class="form-input" />
+                    </div>
+                    <button class="btn btn-warning btn-full" id="execute-liquidate">Execute Liquidation</button>
+                  </div>
+                </div>
+
+                <!-- Preview -->
+                <div class="operation-preview" id="operation-preview">
+                  <h4>Transaction Preview</h4>
+                  <div class="preview-list" id="preview-list">
+                    <p class="muted">Select assets and enter an amount to preview</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Markets Table -->
+          <section class="section">
+            <div class="section-header">
+              <h2>Your Positions</h2>
+            </div>
+            <div class="markets-table-wrapper">
+              <table class="markets-table" id="positions-table">
+                <thead>
+                  <tr>
+                    <th>Asset</th>
+                    <th>Price</th>
+                    <th>Your Deposits</th>
+                    <th>Your Debt</th>
+                    <th>Collateral Factor</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="positions-tbody">
+                  <tr class="empty-row">
+                    <td colspan="6">Connect wallet to view positions</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
 
       <!-- Footer -->
       <footer class="footer">
-        <p>Mini DeFi Lending Pool &middot; Built with Solidity &amp; Hardhat</p>
+        <p>Mini DeFi Lending Platform &middot; Multi-Asset Support &middot; Built with Solidity &amp; Hardhat</p>
       </footer>
     </div>
 
