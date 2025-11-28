@@ -66,6 +66,9 @@ _initWhenReady();
 async function initializeApp() {
     console.log('[Mini-DeFi] Initializing app...');
     
+    // Initialize theme controls first (for immediate visual feedback)
+    initThemeControls();
+    
     // Load contract addresses
     try {
         const response = await fetch('deployed-contracts.json');
@@ -562,11 +565,11 @@ function renderAssetList(assetList) {
     container.innerHTML = displayedAssets.map(asset => {
         const isSelected = selectedAssets.has(asset.address);
         const position = userPositions[asset.address] || {};
-        const priceFormatted = asset.price > 0 ? `$${formatUnits(asset.price, 8)}` : 'N/A';
+        const priceFormatted = asset.price > 0n ? `$${formatUnits(asset.price, 8)}` : 'N/A';
         
         // Calculate user's value in this asset
-        const depositValue = position.deposits && asset.price > 0 
-            ? formatUnits(position.deposits * asset.price / BigInt(10 ** asset.decimals), 8)
+        const depositValue = position.deposits && asset.price > 0n 
+            ? formatUnits(position.deposits * asset.price / (10n ** BigInt(asset.decimals)), 8)
             : '0';
 
         return `
@@ -839,9 +842,9 @@ function updatePreview() {
         const usdAmount = totalAmount * (proportion / 100);
         let tokenAmount = 'N/A';
 
-        if (asset.price > 0) {
+        if (asset.price > 0n) {
             // Convert USD to tokens: (usdAmount * 10^8 * 10^decimals) / price
-            const amountBigInt = BigInt(Math.floor(usdAmount * 1e8)) * BigInt(10 ** asset.decimals) / asset.price;
+            const amountBigInt = BigInt(Math.floor(usdAmount * 1e8)) * (10n ** BigInt(asset.decimals)) / asset.price;
             tokenAmount = formatUnits(amountBigInt, asset.decimals);
         }
 
@@ -902,9 +905,9 @@ async function executeBatchOperation(operation) {
 
             // Calculate amount for this asset based on USD value and asset price
             let amount;
-            if (asset.price > 0) {
+            if (asset.price > 0n) {
                 const usdAmount = totalAmount * (proportion / 100);
-                amount = BigInt(Math.floor(usdAmount * 1e8)) * BigInt(10 ** asset.decimals) / asset.price;
+                amount = BigInt(Math.floor(usdAmount * 1e8)) * (10n ** BigInt(asset.decimals)) / asset.price;
             } else {
                 showToast(`Cannot calculate amount for ${asset.symbol} (no price)`, 'warning');
                 continue;
@@ -1043,13 +1046,13 @@ async function updatePortfolio() {
 
     for (const asset of assets) {
         const position = userPositions[asset.address];
-        if (!position || asset.price === BigInt(0)) continue;
+        if (!position || asset.price === 0n) continue;
 
-        if (position.deposits > 0) {
-            totalCollateralUSD += position.deposits * asset.price / BigInt(10 ** asset.decimals);
+        if (position.deposits > 0n) {
+            totalCollateralUSD += position.deposits * asset.price / (10n ** BigInt(asset.decimals));
         }
-        if (position.borrows > 0) {
-            totalBorrowedUSD += position.borrows * asset.price / BigInt(10 ** asset.decimals);
+        if (position.borrows > 0n) {
+            totalBorrowedUSD += position.borrows * asset.price / (10n ** BigInt(asset.decimals));
         }
     }
 
@@ -1063,7 +1066,7 @@ async function updatePortfolio() {
         const hfNum = parseFloat(hfFormatted);
         
         const hfEl = document.getElementById('health-factor');
-        hfEl.textContent = hfNum > 1000 ? '∞' : hfNum.toFixed(2);
+        hfEl.textContent = hfNum > 1000 ? 'MAX' : hfNum.toFixed(2);
         hfEl.className = `overview-value ${hfNum >= 1.5 ? 'health-good' : (hfNum >= 1.0 ? 'health-warning' : 'health-danger')}`;
     } catch (e) {
         document.getElementById('health-factor').textContent = '-';
@@ -1095,7 +1098,7 @@ function updatePositionsTable() {
 
     tbody.innerHTML = assetsWithPositions.map(asset => {
         const pos = userPositions[asset.address];
-        const priceFormatted = asset.price > 0 ? `$${formatUnits(asset.price, 8)}` : 'N/A';
+        const priceFormatted = asset.price > 0n ? `$${formatUnits(asset.price, 8)}` : 'N/A';
         const depositsFormatted = formatUnits(pos.deposits, asset.decimals);
         const borrowsFormatted = formatUnits(pos.borrows, asset.decimals);
         const cfFormatted = formatUnits(asset.collateralFactor, 16) + '%';
@@ -1206,7 +1209,7 @@ Five operations available:
 - Platform distributes operation across selected assets
 
 ### Health Factor
-- Formula: (Total Collateral × Collateral Factor) / Total Borrows
+- Formula: (Total Collateral x Collateral Factor) / Total Borrows
 - Above 1.5: Safe (green)
 - 1.0 - 1.5: Caution (yellow)
 - Below 1.0: Liquidation risk (red)
@@ -1270,7 +1273,7 @@ function saveApiKey() {
     localStorage.setItem('openai-api-key', key);
     input.value = '';
     updateApiKeyStatus();
-    addChatMessage('✓ API key saved! You now have full AI assistance.', 'assistant');
+    addChatMessage('API key saved! You now have full AI assistance.', 'assistant');
     showToast('API key saved successfully', 'success');
 }
 
@@ -1289,7 +1292,7 @@ function updateApiKeyStatus() {
     if (!statusEl) return;
     
     if (openaiApiKey) {
-        statusEl.textContent = '✓ API key connected - Full AI assistance enabled';
+        statusEl.textContent = 'API key connected - Full AI assistance enabled';
         statusEl.className = 'api-key-status connected';
     } else {
         statusEl.textContent = 'No API key set - Using basic responses';
@@ -1405,47 +1408,47 @@ function generateLocalResponse(query) {
         
         // Deposit questions
         { match: /how.*(deposit|supply|add funds|put money)/i,
-          response: "**How to Deposit:**\n\n1) **Select Assets** - Click on assets in the left sidebar (Asset Browser)\n2) **Set Proportions** - Adjust how much goes to each asset (must total 100%)\n3) **Enter Amount** - Type the USD value in the Deposit panel\n4) **Execute** - Click 'Execute Deposit' and confirm in MetaMask\n\n💡 Tip: Use 'Equalize' to split evenly across selected assets!" },
+          response: "**How to Deposit:**\n\n1) **Select Assets** - Click on assets in the left sidebar (Asset Browser)\n2) **Set Proportions** - Adjust how much goes to each asset (must total 100%)\n3) **Enter Amount** - Type the USD value in the Deposit panel\n4) **Execute** - Click 'Execute Deposit' and confirm in MetaMask\n\nTip: Use 'Equalize' to split evenly across selected assets!" },
         
         // Withdraw questions  
         { match: /how.*(withdraw|remove|take out)/i,
-          response: "**How to Withdraw:**\n\n1) Select assets you've deposited in the Asset Browser\n2) Click the **Withdraw** tab in the Operation Panel\n3) Set proportions and enter amount to withdraw\n4) Click 'Execute Withdraw'\n\n⚠️ **Important:** Withdrawing reduces collateral. Keep your Health Factor above 1.0 to avoid liquidation!" },
+          response: "**How to Withdraw:**\n\n1) Select assets you've deposited in the Asset Browser\n2) Click the **Withdraw** tab in the Operation Panel\n3) Set proportions and enter amount to withdraw\n4) Click 'Execute Withdraw'\n\n**Important:** Withdrawing reduces collateral. Keep your Health Factor above 1.0 to avoid liquidation!" },
         
         // Borrow questions
         { match: /how.*(borrow|take loan|get loan)/i,
-          response: "**How to Borrow:**\n\n1) First, deposit assets as collateral\n2) Select assets you want to borrow from Asset Browser\n3) Click the **Borrow** tab\n4) Enter amount (limited by your collateral × collateral factor)\n5) Execute and confirm\n\n💡 Your borrowing power = Collateral Value × Collateral Factor" },
+          response: "**How to Borrow:**\n\n1) First, deposit assets as collateral\n2) Select assets you want to borrow from Asset Browser\n3) Click the **Borrow** tab\n4) Enter amount (limited by your collateral x collateral factor)\n5) Execute and confirm\n\nYour borrowing power = Collateral Value x Collateral Factor" },
         
         // Repay questions
         { match: /how.*(repay|pay back|return)/i,
-          response: "**How to Repay:**\n\n1) Select the assets you borrowed\n2) Click the **Repay** tab\n3) Set the amount to repay (including interest owed)\n4) Execute the transaction\n\n💡 Repaying debt improves your Health Factor and frees up borrowing capacity." },
+          response: "**How to Repay:**\n\n1) Select the assets you borrowed\n2) Click the **Repay** tab\n3) Set the amount to repay (including interest owed)\n4) Execute the transaction\n\nRepaying debt improves your Health Factor and frees up borrowing capacity." },
         
         // Health Factor
         { match: /health factor|health score/i,
-          response: "**Health Factor Explained:**\n\n📊 **Formula:** Health Factor = (Collateral × Collateral Factor) ÷ Total Borrows\n\n• **Above 1.5** ✅ Safe zone\n• **1.0 - 1.5** ⚠️ Caution zone\n• **Below 1.0** 🚨 Liquidation risk!\n\n**Example:** $1000 collateral with 75% factor, $500 borrowed = HF of 1.5" },
+          response: "**Health Factor Explained:**\n\n**Formula:** Health Factor = (Collateral x Collateral Factor) / Total Borrows\n\n- **Above 1.5** - Safe zone\n- **1.0 - 1.5** - Caution zone\n- **Below 1.0** - Liquidation risk!\n\n**Example:** $1000 collateral with 75% factor, $500 borrowed = HF of 1.5" },
         
         // Liquidation
         { match: /liquidat/i,
-          response: "**Liquidation Explained:**\n\n🚨 Liquidation occurs when your Health Factor drops below 1.0.\n\n**What happens:**\n• Anyone can repay part of your debt\n• They receive your collateral at a discount (liquidation bonus)\n• You lose collateral but reduce debt\n\n**How to avoid:**\n• Keep Health Factor above 1.5\n• Monitor asset prices\n• Repay debt if HF drops" },
+          response: "**Liquidation Explained:**\n\nLiquidation occurs when your Health Factor drops below 1.0.\n\n**What happens:**\n- Anyone can repay part of your debt\n- They receive your collateral at a discount (liquidation bonus)\n- You lose collateral but reduce debt\n\n**How to avoid:**\n- Keep Health Factor above 1.5\n- Monitor asset prices\n- Repay debt if HF drops" },
         
         // Collateral Factor
         { match: /collateral factor/i,
-          response: "**Collateral Factor:**\n\nThe collateral factor (50-85%) determines how much you can borrow against an asset.\n\n**Example:**\n• Deposit $1000 USDC (75% collateral factor)\n• Maximum borrow = $1000 × 0.75 = $750\n\n💡 Stablecoins typically have higher factors (safer), volatile assets have lower factors." },
+          response: "**Collateral Factor:**\n\nThe collateral factor (50-85%) determines how much you can borrow against an asset.\n\n**Example:**\n- Deposit $1000 USDC (75% collateral factor)\n- Maximum borrow = $1000 x 0.75 = $750\n\nStablecoins typically have higher factors (safer), volatile assets have lower factors." },
         
         // Interest rates
         { match: /interest|rate|apy|yield/i,
-          response: "**Interest Rates:**\n\n📈 Interest rates are dynamic based on **utilization** (borrowed/deposited):\n\n• **Low utilization** → Lower rates\n• **High utilization** → Higher rates\n\n**Depositors** earn interest (supply APY)\n**Borrowers** pay interest (borrow APY)\n\nRates adjust automatically to balance supply and demand." },
+          response: "**Interest Rates:**\n\nInterest rates are dynamic based on **utilization** (borrowed/deposited):\n\n- **Low utilization** = Lower rates\n- **High utilization** = Higher rates\n\n**Depositors** earn interest (supply APY)\n**Borrowers** pay interest (borrow APY)\n\nRates adjust automatically to balance supply and demand." },
         
         // Batch operations
         { match: /batch|multiple|several assets/i,
-          response: "**Batch Operations:**\n\nSelect multiple assets to deposit/withdraw/borrow/repay in one transaction!\n\n1) Click multiple assets in the Asset Browser\n2) Set proportions for each (total must = 100%)\n3) Click 'Equalize' to split evenly\n4) Enter total amount and execute\n\n💡 Saves gas vs. individual transactions!" },
+          response: "**Batch Operations:**\n\nSelect multiple assets to deposit/withdraw/borrow/repay in one transaction!\n\n1) Click multiple assets in the Asset Browser\n2) Set proportions for each (total must = 100%)\n3) Click 'Equalize' to split evenly\n4) Enter total amount and execute\n\nSaves gas vs. individual transactions!" },
         
         // Connect wallet
         { match: /connect|wallet|metamask/i,
-          response: "**Connecting Your Wallet:**\n\n1) Click **'Connect Wallet'** in the top-right corner\n2) Select MetaMask (or your wallet)\n3) Approve the connection request\n\n**Network:** Make sure you're on the correct network (Hardhat Local for testing)\n\n🔑 Your wallet address will appear once connected." },
+          response: "**Connecting Your Wallet:**\n\n1) Click **'Connect Wallet'** in the top-right corner\n2) Select MetaMask (or your wallet)\n3) Approve the connection request\n\n**Network:** Make sure you're on the correct network (Hardhat Local for testing)\n\nYour wallet address will appear once connected." },
         
         // What is this / getting started
         { match: /what is|getting started|new here|explain|tutorial/i,
-          response: "**Welcome to Mini-DeFi!**\n\nThis is a decentralized lending platform where you can:\n\n💰 **Deposit** assets to earn interest\n🏦 **Borrow** against your deposits\n📊 **Manage** a multi-asset portfolio\n\n**Getting Started:**\n1) Connect your wallet\n2) Deposit some assets as collateral\n3) (Optional) Borrow against your collateral\n4) Monitor your Health Factor\n\nAsk me about any specific feature!" },
+          response: "**Welcome to Mini-DeFi!**\n\nThis is a decentralized lending platform where you can:\n\n- **Deposit** assets to earn interest\n- **Borrow** against your deposits\n- **Manage** a multi-asset portfolio\n\n**Getting Started:**\n1) Connect your wallet\n2) Deposit some assets as collateral\n3) (Optional) Borrow against your collateral\n4) Monitor your Health Factor\n\nAsk me about any specific feature!" },
         
         // Assets / tokens
         { match: /asset|token|coin|which/i,
@@ -1457,7 +1460,7 @@ function generateLocalResponse(query) {
         
         // Thanks
         { match: /thank|thanks|thx/i,
-          response: "You're welcome! 😊 Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" }
+          response: "You're welcome! Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" }
     ];
 
     // Find matching response
@@ -1547,10 +1550,10 @@ function showToast(message, type = 'info') {
     
     // Set icon
     const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
-        info: 'ℹ'
+        success: '[OK]',
+        error: '[X]',
+        warning: '[!]',
+        info: '[i]'
     };
     iconEl.textContent = icons[type] || icons.info;
     
@@ -1607,9 +1610,126 @@ function debounce(func, wait) {
     };
 }
 
+// ============================================================================
+// Theme & Contrast Controls
+// ============================================================================
+
+/**
+ * Initialize theme and contrast controls
+ * Loads saved preferences from localStorage
+ */
+function initThemeControls() {
+    const themePanelBtn = document.getElementById('theme-toggle-btn');
+    const themePanel = document.getElementById('theme-panel');
+    const themePanelClose = document.getElementById('theme-panel-close');
+    const themeDayBtn = document.getElementById('theme-day');
+    const themeNightBtn = document.getElementById('theme-night');
+    const contrastSlider = document.getElementById('contrast-slider');
+    
+    // Load saved preferences
+    const savedTheme = localStorage.getItem('mini-defi-theme') || 'night';
+    const savedContrast = localStorage.getItem('mini-defi-contrast') || '1';
+    
+    // Apply saved theme
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeModeButtons(savedTheme);
+    
+    // Apply saved contrast
+    if (contrastSlider) {
+        contrastSlider.value = savedContrast;
+    }
+    applyContrast(savedContrast);
+    
+    // Add event listeners
+    themePanelBtn?.addEventListener('click', toggleThemePanel);
+    themePanelClose?.addEventListener('click', closeThemePanel);
+    
+    themeDayBtn?.addEventListener('click', () => setTheme('day'));
+    themeNightBtn?.addEventListener('click', () => setTheme('night'));
+    
+    contrastSlider?.addEventListener('input', (e) => applyContrast(e.target.value));
+    
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        if (themePanel?.classList.contains('open') && 
+            !themePanel.contains(e.target) && 
+            !themePanelBtn?.contains(e.target)) {
+            closeThemePanel();
+        }
+    });
+    
+    console.log(`[Mini-DeFi] Theme controls initialized: theme=${savedTheme}, contrast=${savedContrast}`);
+}
+
+/**
+ * Toggle theme settings panel visibility
+ */
+function toggleThemePanel() {
+    const themePanel = document.getElementById('theme-panel');
+    themePanel?.classList.toggle('open');
+}
+
+/**
+ * Close theme settings panel
+ */
+function closeThemePanel() {
+    const themePanel = document.getElementById('theme-panel');
+    themePanel?.classList.remove('open');
+}
+
+/**
+ * Set the current theme (day or night)
+ */
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('mini-defi-theme', theme);
+    updateThemeModeButtons(theme);
+    console.log(`[Mini-DeFi] Theme changed to: ${theme}`);
+}
+
+/**
+ * Update theme mode buttons (Day/Night toggle)
+ */
+function updateThemeModeButtons(theme) {
+    const themeDayBtn = document.getElementById('theme-day');
+    const themeNightBtn = document.getElementById('theme-night');
+    
+    if (theme === 'day') {
+        themeDayBtn?.classList.add('active');
+        themeNightBtn?.classList.remove('active');
+    } else {
+        themeDayBtn?.classList.remove('active');
+        themeNightBtn?.classList.add('active');
+    }
+}
+
+/**
+ * Apply contrast level
+ * @param {string} level - 0 = Low, 1 = Medium, 2 = High, 3 = Very High
+ */
+function applyContrast(level) {
+    const levels = ['low', 'medium', 'high', 'very-high'];
+    const labels = ['Low', 'Medium', 'High', 'Very High'];
+    const contrastValue = document.getElementById('contrast-value');
+    
+    const levelIndex = parseInt(level) || 1;
+    const contrastLevel = levels[levelIndex] || 'medium';
+    
+    document.documentElement.setAttribute('data-contrast', contrastLevel);
+    
+    if (contrastValue) {
+        contrastValue.textContent = labels[levelIndex] || 'Medium';
+    }
+    
+    localStorage.setItem('mini-defi-contrast', level.toString());
+}
+
 // Make functions available globally
 window.toggleAssetSelection = toggleAssetSelection;
 window.removeFromSelection = removeFromSelection;
 window.updateProportion = updateProportion;
 window.quickAction = quickAction;
 window.loadAllAssets = loadAllAssets;
+window.setTheme = setTheme;
+window.applyContrast = applyContrast;
+window.toggleThemePanel = toggleThemePanel;

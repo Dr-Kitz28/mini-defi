@@ -1,4 +1,4 @@
-# Mini DeFi – Multi-Asset Lending Pool
+# Mini DeFi - Multi-Asset Lending Pool
 
 A production-ready decentralized lending protocol built with Hardhat/Solidity. Supports **multiple assets**, **cross-collateral borrowing**, and **dynamic interest rates pegged to real-world repo rates** for fiat currency integration.
 
@@ -6,19 +6,19 @@ A production-ready decentralized lending protocol built with Hardhat/Solidity. S
 
 ## Features
 
-### ✅ Multi-Asset Lending Pool
+### Multi-Asset Lending Pool
 - Deposit and earn interest on multiple ERC-20 tokens
 - Borrow one asset using another as collateral (cross-collateral)
 - Per-asset configuration: collateral factors, liquidation bonuses, interest rate models
 - Secure liquidation mechanism with configurable bonuses
 
-### ✅ Fiat Currency Pegging via Global Repo Rates
-- **GlobalRepoRateOracle** — on-chain oracle storing global repo rates (mirrors central bank rates)
-- **DynamicInterestRateModel** — borrow rates adjust based on:
+### Fiat Currency Pegging via Global Repo Rates
+- **GlobalRepoRateOracle** - on-chain oracle storing global repo rates (mirrors central bank rates)
+- **DynamicInterestRateModel** - borrow rates adjust based on:
   - Base rate + Utilization component + **Global repo rate**
 - Enables fiat-pegged stablecoin lending with rates tied to real-world monetary policy
 
-### ✅ Multiple Interest Rate Models
+### Multiple Interest Rate Models
 | Model | Description |
 |-------|-------------|
 | `LinearInterestRateModel` | Simple linear curve based on utilization |
@@ -27,39 +27,78 @@ A production-ready decentralized lending protocol built with Hardhat/Solidity. S
 | `TimeWeightedInterestRateModel` | Fraxlend-style adaptive controller |
 | `DynamicInterestRateModel` | **Repo-rate-aware** for fiat pegging |
 
+### Modern Web Dashboard
+- Day/Night theme toggle
+- Adjustable contrast levels (Low, Medium, High, Very High)
+- 3D button effects with hover and click animations
+- Real-time asset prices and positions
+- AI-powered chat assistant for DeFi guidance
+- Batch operations for multi-asset deposits/withdrawals
+
 ---
 
-## Quick Start
+## Quick Start (Windows)
 
-### Install dependencies
+### Option 1: One-Click Start (Recommended)
+Double-click `start.bat` to automatically:
+1. Install dependencies
+2. Compile contracts
+3. Start the blockchain node
+4. Deploy contracts with 100 assets
+5. Launch the frontend
+
+### Option 2: PowerShell Script
+```powershell
+.\start-servers.ps1
+```
+
+### Option 3: Manual Setup
+
+#### Install dependencies
 ```powershell
 npm install
 ```
 
-### Run tests
+#### Run tests
 ```powershell
 npm test
 ```
 
-### Start local blockchain
+#### Start local blockchain (Terminal 1)
 ```powershell
 npx hardhat node
 ```
 
-### Deploy contracts (in a new terminal)
+#### Deploy contracts (Terminal 2)
 ```powershell
 npx hardhat run scripts/deploy.js --network localhost
+npx hardhat run scripts/deploy-many-assets.js --network localhost
 ```
 
-### Use the frontend
-1. Serve the frontend directory:
-   ```powershell
-   npx http-server frontend -p 8000
-   ```
-2. Open http://127.0.0.1:8000 in your browser
-3. Connect MetaMask to Hardhat Local (Chain ID: 31337, RPC: http://127.0.0.1:8545)
-4. Import a Hardhat test account private key into MetaMask
-5. Deposit, borrow, repay, withdraw, and liquidate positions
+#### Start frontend server (Terminal 3)
+```powershell
+cd frontend
+python -m http.server 3000
+```
+
+#### Open the dashboard
+Navigate to http://localhost:3000 in your browser
+
+---
+
+## Connecting MetaMask
+
+1. Open MetaMask and add a custom network:
+   - **Network Name**: Hardhat Local
+   - **RPC URL**: http://127.0.0.1:8545
+   - **Chain ID**: 31337
+   - **Currency Symbol**: ETH
+
+2. Import a test account (Hardhat provides 20 pre-funded accounts):
+   - Copy a private key from the Hardhat node output
+   - In MetaMask: Account icon -> Import Account -> Paste private key
+
+3. Click "Connect Wallet" in the dashboard
 
 ---
 
