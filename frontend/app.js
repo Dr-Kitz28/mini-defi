@@ -478,6 +478,7 @@ async function loadUserPositions() {
     if (!signer || assets.length === 0) return;
 
     const userAddress = await signer.getAddress();
+    const poolAddress = await lendingPoolContract.getAddress();
     userPositions = {};
 
     // Load positions in batches
@@ -485,28 +486,45 @@ async function loadUserPositions() {
     for (let i = 0; i < assets.length; i += batchSize) {
         const batch = assets.slice(i, i + batchSize);
         const promises = batch.map(async (asset) => {
-            try {
-                const [deposits, borrows, balance, allowance] = await Promise.all([
-                    lendingPoolContract.userDeposits(userAddress, asset.address),
-                    lendingPoolContract.userBorrows(userAddress, asset.address),
-                    new ethers.Contract(asset.address, ERC20_ABI, provider).balanceOf(userAddress),
-                    new ethers.Contract(asset.address, ERC20_ABI, provider).allowance(userAddress, await lendingPoolContract.getAddress())
-                ]);
+            // Default position values
+            const position = {
+                deposits: BigInt(0),
+                borrows: BigInt(0),
+                balance: BigInt(0),
+                allowance: BigInt(0)
+            };
 
-                userPositions[asset.address] = {
-                    deposits,
-                    borrows,
-                    balance,
-                    allowance
-                };
+            try {
+                // Get deposits and borrows from lending pool (these should always work)
+                const [deposits, borrows] = await Promise.all([
+                    lendingPoolContract.userDeposits(userAddress, asset.address).catch(() => BigInt(0)),
+                    lendingPoolContract.userBorrows(userAddress, asset.address).catch(() => BigInt(0))
+                ]);
+                position.deposits = deposits;
+                position.borrows = borrows;
+
+                // Try to get token balance and allowance - these may fail for invalid/mock tokens
+                try {
+                    const tokenContract = new ethers.Contract(asset.address, ERC20_ABI, provider);
+                    // Check if the contract has code (is a valid contract)
+                    const code = await provider.getCode(asset.address);
+                    if (code && code !== '0x') {
+                        const [balance, allowance] = await Promise.all([
+                            tokenContract.balanceOf(userAddress).catch(() => BigInt(0)),
+                            tokenContract.allowance(userAddress, poolAddress).catch(() => BigInt(0))
+                        ]);
+                        position.balance = balance;
+                        position.allowance = allowance;
+                    }
+                } catch (tokenErr) {
+                    // Token contract calls failed - use defaults
+                    console.debug(`[Mini-DeFi] Token ${asset.symbol} contract call failed:`, tokenErr.message);
+                }
             } catch (e) {
-                userPositions[asset.address] = {
-                    deposits: BigInt(0),
-                    borrows: BigInt(0),
-                    balance: BigInt(0),
-                    allowance: BigInt(0)
-                };
+                console.debug(`[Mini-DeFi] Failed to load position for ${asset.symbol}:`, e.message);
             }
+
+            userPositions[asset.address] = position;
         });
 
         await Promise.all(promises);
@@ -942,16 +960,29 @@ async function executeBatchOperation(operation) {
 }
 
 async function executeAssetOperation(action, asset, amount) {
-    const tokenContract = new ethers.Contract(asset.address, ERC20_ABI, signer);
     const poolAddress = await lendingPoolContract.getAddress();
+    const userAddress = await signer.getAddress();
+
+    // Verify the token contract is valid before proceeding
+    const code = await provider.getCode(asset.address);
+    if (!code || code === '0x') {
+        throw new Error(`Token ${asset.symbol} is not a valid contract`);
+    }
+
+    const tokenContract = new ethers.Contract(asset.address, ERC20_ABI, signer);
 
     // Check and approve if needed for deposit/repay
     if (action === 'deposit' || action === 'repay') {
-        const allowance = await tokenContract.allowance(await signer.getAddress(), poolAddress);
-        if (allowance < amount) {
-            showToast(`Approving ${asset.symbol}...`, 'info');
-            const approveTx = await tokenContract.approve(poolAddress, ethers.MaxUint256);
-            await approveTx.wait();
+        try {
+            const allowance = await tokenContract.allowance(userAddress, poolAddress);
+            if (allowance < amount) {
+                showToast(`Approving ${asset.symbol}...`, 'info');
+                const approveTx = await tokenContract.approve(poolAddress, ethers.MaxUint256);
+                await approveTx.wait();
+            }
+        } catch (approvalErr) {
+            console.error(`[Mini-DeFi] Approval check failed for ${asset.symbol}:`, approvalErr);
+            throw new Error(`Failed to check/approve ${asset.symbol}: ${approvalErr.message}`);
         }
     }
 
@@ -1615,9 +1646,6 @@ function debounce(func, wait) {
  * Loads saved preferences from localStorage
  */
 function initThemeControls() {
-    const themePanelBtn = document.getElementById('theme-toggle-btn');
-    const themePanel = document.getElementById('theme-panel');
-    const themePanelClose = document.getElementById('theme-panel-close');
     const themeDayBtn = document.getElementById('theme-day');
     const themeNightBtn = document.getElementById('theme-night');
     const contrastSlider = document.getElementById('contrast-slider');
@@ -1636,41 +1664,14 @@ function initThemeControls() {
     }
     applyContrast(savedContrast);
     
-    // Add event listeners
-    themePanelBtn?.addEventListener('click', toggleThemePanel);
-    themePanelClose?.addEventListener('click', closeThemePanel);
-    
+    // Add event listeners for theme buttons
     themeDayBtn?.addEventListener('click', () => setTheme('day'));
     themeNightBtn?.addEventListener('click', () => setTheme('night'));
     
+    // Add event listener for contrast slider
     contrastSlider?.addEventListener('input', (e) => applyContrast(e.target.value));
     
-    // Close panel when clicking outside
-    document.addEventListener('click', (e) => {
-        if (themePanel?.classList.contains('open') && 
-            !themePanel.contains(e.target) && 
-            !themePanelBtn?.contains(e.target)) {
-            closeThemePanel();
-        }
-    });
-    
     console.log(`[Mini-DeFi] Theme controls initialized: theme=${savedTheme}, contrast=${savedContrast}`);
-}
-
-/**
- * Toggle theme settings panel visibility
- */
-function toggleThemePanel() {
-    const themePanel = document.getElementById('theme-panel');
-    themePanel?.classList.toggle('open');
-}
-
-/**
- * Close theme settings panel
- */
-function closeThemePanel() {
-    const themePanel = document.getElementById('theme-panel');
-    themePanel?.classList.remove('open');
 }
 
 /**
@@ -1728,4 +1729,3 @@ window.quickAction = quickAction;
 window.loadAllAssets = loadAllAssets;
 window.setTheme = setTheme;
 window.applyContrast = applyContrast;
-window.toggleThemePanel = toggleThemePanel;

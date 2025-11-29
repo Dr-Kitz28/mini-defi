@@ -437,70 +437,48 @@
       </footer>
     </div>
 
-    <!-- Theme Controls -->
-    <div class="theme-controls">
-      <div class="theme-panel" id="theme-panel">
-        <div class="theme-panel-header">
-          <h4>Display Settings</h4>
-          <button class="theme-panel-close" id="theme-panel-close" aria-label="Close">&times;</button>
-        </div>
-        
-        <!-- Day/Night Sliding Toggle -->
-        <div class="theme-mode-toggle" id="theme-mode-toggle">
-          <button class="theme-mode-btn active" id="theme-day" data-theme="day" type="button">
-            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-              <circle cx="12" cy="12" r="5"/>
-              <g stroke="currentColor" stroke-width="2" fill="none">
-                <line x1="12" y1="1" x2="12" y2="3"/>
-                <line x1="12" y1="21" x2="12" y2="23"/>
-                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-                <line x1="1" y1="12" x2="3" y2="12"/>
-                <line x1="21" y1="12" x2="23" y2="12"/>
-                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-              </g>
-            </svg>
-            Day
-          </button>
-          <button class="theme-mode-btn" id="theme-night" data-theme="night" type="button">
-            <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-            Night
-          </button>
-        </div>
-        
-        <!-- Contrast Slider -->
-        <div class="contrast-control">
-          <div class="contrast-label">
-            <span>Contrast Level</span>
-            <span class="contrast-value" id="contrast-value">Medium</span>
-          </div>
-          <input 
-            type="range" 
-            class="contrast-slider" 
-            id="contrast-slider" 
-            min="0" 
-            max="3" 
-            value="1" 
-            step="1"
-          />
-          <div class="contrast-labels">
-            <span>Low</span>
-            <span>Medium</span>
-            <span>High</span>
-            <span>Very High</span>
-          </div>
-        </div>
+    <!-- Display Settings (Inline in top-right corner) -->
+    <div class="display-settings-inline" id="display-settings-inline">
+      <!-- Day/Night Sliding Toggle -->
+      <div class="theme-mode-toggle" id="theme-mode-toggle">
+        <button class="theme-mode-btn active" id="theme-day" data-theme="day" type="button">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <circle cx="12" cy="12" r="5"/>
+            <g stroke="currentColor" stroke-width="2" fill="none">
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </g>
+          </svg>
+          DAY
+        </button>
+        <button class="theme-mode-btn" id="theme-night" data-theme="night" type="button">
+          <svg viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          NIGHT
+        </button>
       </div>
       
-      <button class="theme-toggle-btn" id="theme-toggle-btn" title="Display Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-        </svg>
-      </button>
+      <!-- Contrast Slider -->
+      <div class="contrast-control-inline">
+        <span class="contrast-label-text">Contrast</span>
+        <input 
+          type="range" 
+          class="contrast-slider" 
+          id="contrast-slider" 
+          min="0" 
+          max="3" 
+          value="1" 
+          step="1"
+        />
+        <span class="contrast-value" id="contrast-value">Medium</span>
+      </div>
     </div>
 
     <!-- Load ethers.js with CDN fallback -->
