@@ -97,9 +97,15 @@
               </div>
             </div>
           </div>
-          <div class="chat-api-hint">
-            💡 For AI responses, set your API key: <code>/setkey sk-...</code> | Clear: <code>/clearkey</code>
-          </div>
+          <details class="chat-api-settings" id="chat-api-settings">
+            <summary class="api-settings-toggle">Advanced: OpenAI API (Optional)</summary>
+            <div class="api-key-row">
+              <input type="password" id="api-key-input" class="api-key-input" placeholder="sk-... (optional)" />
+              <button class="btn btn-sm btn-primary" id="save-api-key">Save</button>
+              <button class="btn btn-sm btn-ghost" id="clear-api-key" title="Clear">X</button>
+            </div>
+            <div class="api-key-status" id="api-key-status"></div>
+          </details>
           <div class="chat-input-container">
             <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything about DeFi..." />
             <button class="btn btn-primary" id="chat-send">
@@ -429,6 +435,70 @@
       <footer class="footer">
         <p>Mini DeFi Lending Platform &middot; Multi-Asset Support &middot; Built with Solidity &amp; Hardhat</p>
       </footer>
+    </div>
+
+    <!-- Theme Controls -->
+    <div class="theme-controls">
+      <div class="theme-panel" id="theme-panel">
+        <div class="theme-panel-header">
+          <h4>Display Settings</h4>
+          <button class="theme-panel-close" id="theme-panel-close" aria-label="Close">&times;</button>
+        </div>
+        
+        <!-- Day/Night Toggle -->
+        <div class="theme-mode-toggle">
+          <button class="theme-mode-btn" id="theme-day" data-theme="day">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+            Day
+          </button>
+          <button class="theme-mode-btn active" id="theme-night" data-theme="night">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            Night
+          </button>
+        </div>
+        
+        <!-- Contrast Slider -->
+        <div class="contrast-control">
+          <div class="contrast-label">
+            <span>Contrast Level</span>
+            <span class="contrast-value" id="contrast-value">Medium</span>
+          </div>
+          <input 
+            type="range" 
+            class="contrast-slider" 
+            id="contrast-slider" 
+            min="0" 
+            max="3" 
+            value="1" 
+            step="1"
+          />
+          <div class="contrast-labels">
+            <span>Low</span>
+            <span>Medium</span>
+            <span>High</span>
+            <span>Very High</span>
+          </div>
+        </div>
+      </div>
+      
+      <button class="theme-toggle-btn" id="theme-toggle-btn" title="Display Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Load ethers.js with CDN fallback -->

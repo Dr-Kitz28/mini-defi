@@ -1,3 +1,6 @@
+echo 'const pool = await ethers.getContractAt("LendingPool", "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"); console.log(await pool.listedAssets(0));' | npx hardhat console --network localhost 2>&1
+const pool = await ethers.getContractAt("LendingPool", "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"); const count = await pool.listedAssets(0).catch(() => null); console.log(count ? "Assets exist" : "No assets - need redeploy");
+const pool = await ethers.getContractAt("LendingPool", "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"); await pool.listedAssets(0).catch(e => console.log("No assets - need to redeploy"));
 .exit
 console.log('relayers:', await rm.getRelayers());
 const RelayerManager = await ethers.getContractFactory('RelayerManagerconst rm = RelayerManager.attach('<PASTE_RELAYER_MANAGER_ADDRESS_FROM_DEPLOY>');

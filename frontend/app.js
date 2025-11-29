@@ -47,24 +47,44 @@ const PRICE_ORACLE_ABI = [
 // Initialization
 // ============================================================================
 
-document.addEventListener('DOMContentLoaded', () => {
-    initializeApp();
-    setupEventListeners();
-});
+function _initWhenReady() {
+    // Ensure initialization runs even if this script is loaded after DOMContentLoaded
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp();
+            setupEventListeners();
+        });
+    } else {
+        // DOM already ready
+        initializeApp();
+        setupEventListeners();
+    }
+}
+
+_initWhenReady();
 
 async function initializeApp() {
+    console.log('[Mini-DeFi] Initializing app...');
+    
+    // Initialize theme controls first (for immediate visual feedback)
+    initThemeControls();
+    
     // Load contract addresses
     try {
         const response = await fetch('deployed-contracts.json');
         if (response.ok) {
             window.deployedContracts = await response.json();
+            console.log('[Mini-DeFi] Loaded contracts:', window.deployedContracts);
+        } else {
+            console.warn('[Mini-DeFi] Failed to load deployed-contracts.json:', response.status);
         }
     } catch (e) {
-        console.log('No deployed contracts found, will prompt for address');
+        console.log('[Mini-DeFi] No deployed contracts found, will prompt for address:', e);
     }
 
     // Check for existing wallet connection
     if (window.ethereum && window.ethereum.selectedAddress) {
+        console.log('[Mini-DeFi] Found existing connection, reconnecting...');
         await connectWallet();
     }
 
@@ -75,6 +95,7 @@ async function initializeApp() {
 
     // Update network display
     updateNetworkDisplay();
+    console.log('[Mini-DeFi] App initialized');
 }
 
 function setupEventListeners() {
@@ -120,6 +141,16 @@ function setupEventListeners() {
         if (e.key === 'Enter') sendChatMessage();
     });
 
+    // API Key UI
+    document.getElementById('save-api-key')?.addEventListener('click', saveApiKey);
+    document.getElementById('clear-api-key')?.addEventListener('click', clearApiKey);
+    document.getElementById('api-key-input')?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') saveApiKey();
+    });
+    
+    // Initialize API key status display
+    updateApiKeyStatus();
+
     // Help modal
     document.getElementById('help-btn')?.addEventListener('click', showHelp);
     document.getElementById('help-close')?.addEventListener('click', hideHelp);
@@ -162,9 +193,11 @@ async function connectWallet() {
     }
 
     try {
+        console.log('[Mini-DeFi] Connecting wallet...');
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
+        console.log('[Mini-DeFi] Connected account:', accounts[0]);
 
         const address = accounts[0];
         const connectBtn = document.getElementById('connect-btn');
@@ -178,14 +211,20 @@ async function connectWallet() {
         connectBtn.disabled = true;
         connectBtn.classList.add('connected');
 
+        console.log('[Mini-DeFi] Initializing contracts...');
         await initializeContracts();
+        console.log('[Mini-DeFi] Contract initialized:', lendingPoolContract?.target);
+        
+        console.log('[Mini-DeFi] Loading assets...');
         await loadAllAssets();
+        console.log('[Mini-DeFi] Loaded', assets.length, 'assets');
+        
         await updatePortfolio();
         updateNetworkDisplay();
 
         showToast('Wallet connected successfully!', 'success');
     } catch (error) {
-        console.error('Connection error:', error);
+        console.error('[Mini-DeFi] Connection error:', error);
         showToast('Failed to connect wallet', 'error');
     }
 }
@@ -250,6 +289,7 @@ async function updateNetworkDisplay() {
 
 async function initializeContracts() {
     let poolAddress = window.deployedContracts?.lendingPool;
+    console.log('[Mini-DeFi] Using pool address:', poolAddress);
 
     if (!poolAddress) {
         poolAddress = prompt('Enter LendingPool contract address:');
@@ -260,6 +300,7 @@ async function initializeContracts() {
     }
 
     lendingPoolContract = new ethers.Contract(poolAddress, LENDING_POOL_ABI, signer);
+    console.log('[Mini-DeFi] LendingPool contract created at:', poolAddress);
 }
 
 // ============================================================================
@@ -267,7 +308,10 @@ async function initializeContracts() {
 // ============================================================================
 
 async function loadAllAssets() {
-    if (!lendingPoolContract) return;
+    if (!lendingPoolContract) {
+        console.error('[Mini-DeFi] No contract initialized');
+        return;
+    }
 
     showToast('Loading assets...', 'info');
     assets = [];
@@ -282,36 +326,69 @@ async function loadAllAssets() {
     `;
 
     try {
-        // Load assets in batches for performance
-        let index = 0;
-        const batchSize = 100;
-        let hasMore = true;
-
-        while (hasMore) {
-            const batch = [];
-            for (let i = 0; i < batchSize; i++) {
-                batch.push(loadAssetAtIndex(index + i));
-            }
-
-            const results = await Promise.allSettled(batch);
-            let loadedInBatch = 0;
-
-            for (const result of results) {
-                if (result.status === 'fulfilled' && result.value) {
-                    assets.push(result.value);
-                    loadedInBatch++;
+        // First try to use pre-loaded asset data from deployed-contracts.json (faster)
+        if (window.deployedContracts?.assets) {
+            console.log('[Mini-DeFi] Using pre-loaded asset data');
+            const assetEntries = Object.entries(window.deployedContracts.assets);
+            
+            for (const [symbol, assetInfo] of assetEntries) {
+                try {
+                    const tokenContract = new ethers.Contract(assetInfo.token, ERC20_ABI, signer);
+                    const [name, decimals, balance] = await Promise.all([
+                        tokenContract.name().catch(() => assetInfo.name || symbol),
+                        tokenContract.decimals().catch(() => 18),
+                        tokenContract.balanceOf(await signer.getAddress()).catch(() => 0n)
+                    ]);
+                    
+                    assets.push({
+                        address: assetInfo.token,
+                        symbol: symbol.replace(/_\d+$/, ''), // Remove version suffix like _0, _1
+                        name: name,
+                        decimals: Number(decimals),
+                        price: parseFloat(assetInfo.price) || 1,
+                        collateralFactor: parseFloat(assetInfo.collateralFactor) || 0.5,
+                        category: assetInfo.category || 'Other',
+                        balance: balance
+                    });
+                    
+                    updateAssetCount(assets.length);
+                } catch (err) {
+                    console.warn('[Mini-DeFi] Failed to load asset', symbol, err);
                 }
             }
+        } else {
+            // Fallback: Load from contract (slower but works without deployed-contracts.json)
+            console.log('[Mini-DeFi] Loading assets from contract');
+            let index = 0;
+            const batchSize = 50;
+            let hasMore = true;
 
-            if (loadedInBatch < batchSize) {
-                hasMore = false;
+            while (hasMore) {
+                const batch = [];
+                for (let i = 0; i < batchSize; i++) {
+                    batch.push(loadAssetAtIndex(index + i));
+                }
+
+                const results = await Promise.allSettled(batch);
+                let loadedInBatch = 0;
+
+                for (const result of results) {
+                    if (result.status === 'fulfilled' && result.value) {
+                        assets.push(result.value);
+                        loadedInBatch++;
+                    }
+                }
+
+                if (loadedInBatch < batchSize) {
+                    hasMore = false;
+                }
+
+                index += batchSize;
+                updateAssetCount(assets.length);
             }
-
-            index += batchSize;
-
-            // Update progress
-            updateAssetCount(assets.length);
         }
+
+        console.log('[Mini-DeFi] Loaded', assets.length, 'assets');
 
         // Load user positions for all assets
         await loadUserPositions();
@@ -327,7 +404,7 @@ async function loadAllAssets() {
 
         showToast(`Loaded ${assets.length} assets`, 'success');
     } catch (error) {
-        console.error('Error loading assets:', error);
+        console.error('[Mini-DeFi] Error loading assets:', error);
         showToast('Error loading assets', 'error');
         assetList.innerHTML = `
             <div class="empty-state">
@@ -488,11 +565,11 @@ function renderAssetList(assetList) {
     container.innerHTML = displayedAssets.map(asset => {
         const isSelected = selectedAssets.has(asset.address);
         const position = userPositions[asset.address] || {};
-        const priceFormatted = asset.price > 0 ? `$${formatUnits(asset.price, 8)}` : 'N/A';
+        const priceFormatted = asset.price > 0n ? `$${formatUnits(asset.price, 8)}` : 'N/A';
         
         // Calculate user's value in this asset
-        const depositValue = position.deposits && asset.price > 0 
-            ? formatUnits(position.deposits * asset.price / BigInt(10 ** asset.decimals), 8)
+        const depositValue = position.deposits && asset.price > 0n 
+            ? formatUnits(position.deposits * asset.price / (10n ** BigInt(asset.decimals)), 8)
             : '0';
 
         return `
@@ -531,8 +608,16 @@ function renderAssetList(assetList) {
 // ============================================================================
 
 function toggleAssetSelection(address) {
+    if (!signer) {
+        showToast('Please connect your wallet first', 'warning');
+        return;
+    }
+    
     const asset = assets.find(a => a.address === address);
-    if (!asset) return;
+    if (!asset) {
+        showToast('Asset not found. Try refreshing.', 'error');
+        return;
+    }
 
     if (selectedAssets.has(address)) {
         selectedAssets.delete(address);
@@ -757,9 +842,9 @@ function updatePreview() {
         const usdAmount = totalAmount * (proportion / 100);
         let tokenAmount = 'N/A';
 
-        if (asset.price > 0) {
+        if (asset.price > 0n) {
             // Convert USD to tokens: (usdAmount * 10^8 * 10^decimals) / price
-            const amountBigInt = BigInt(Math.floor(usdAmount * 1e8)) * BigInt(10 ** asset.decimals) / asset.price;
+            const amountBigInt = BigInt(Math.floor(usdAmount * 1e8)) * (10n ** BigInt(asset.decimals)) / asset.price;
             tokenAmount = formatUnits(amountBigInt, asset.decimals);
         }
 
@@ -820,9 +905,9 @@ async function executeBatchOperation(operation) {
 
             // Calculate amount for this asset based on USD value and asset price
             let amount;
-            if (asset.price > 0) {
+            if (asset.price > 0n) {
                 const usdAmount = totalAmount * (proportion / 100);
-                amount = BigInt(Math.floor(usdAmount * 1e8)) * BigInt(10 ** asset.decimals) / asset.price;
+                amount = BigInt(Math.floor(usdAmount * 1e8)) * (10n ** BigInt(asset.decimals)) / asset.price;
             } else {
                 showToast(`Cannot calculate amount for ${asset.symbol} (no price)`, 'warning');
                 continue;
@@ -961,13 +1046,13 @@ async function updatePortfolio() {
 
     for (const asset of assets) {
         const position = userPositions[asset.address];
-        if (!position || asset.price === BigInt(0)) continue;
+        if (!position || asset.price === 0n) continue;
 
-        if (position.deposits > 0) {
-            totalCollateralUSD += position.deposits * asset.price / BigInt(10 ** asset.decimals);
+        if (position.deposits > 0n) {
+            totalCollateralUSD += position.deposits * asset.price / (10n ** BigInt(asset.decimals));
         }
-        if (position.borrows > 0) {
-            totalBorrowedUSD += position.borrows * asset.price / BigInt(10 ** asset.decimals);
+        if (position.borrows > 0n) {
+            totalBorrowedUSD += position.borrows * asset.price / (10n ** BigInt(asset.decimals));
         }
     }
 
@@ -981,7 +1066,7 @@ async function updatePortfolio() {
         const hfNum = parseFloat(hfFormatted);
         
         const hfEl = document.getElementById('health-factor');
-        hfEl.textContent = hfNum > 1000 ? '∞' : hfNum.toFixed(2);
+        hfEl.textContent = hfNum > 1000 ? 'MAX' : hfNum.toFixed(2);
         hfEl.className = `overview-value ${hfNum >= 1.5 ? 'health-good' : (hfNum >= 1.0 ? 'health-warning' : 'health-danger')}`;
     } catch (e) {
         document.getElementById('health-factor').textContent = '-';
@@ -1013,7 +1098,7 @@ function updatePositionsTable() {
 
     tbody.innerHTML = assetsWithPositions.map(asset => {
         const pos = userPositions[asset.address];
-        const priceFormatted = asset.price > 0 ? `$${formatUnits(asset.price, 8)}` : 'N/A';
+        const priceFormatted = asset.price > 0n ? `$${formatUnits(asset.price, 8)}` : 'N/A';
         const depositsFormatted = formatUnits(pos.deposits, asset.decimals);
         const borrowsFormatted = formatUnits(pos.borrows, asset.decimals);
         const cfFormatted = formatUnits(asset.collateralFactor, 16) + '%';
@@ -1124,7 +1209,7 @@ Five operations available:
 - Platform distributes operation across selected assets
 
 ### Health Factor
-- Formula: (Total Collateral × Collateral Factor) / Total Borrows
+- Formula: (Total Collateral x Collateral Factor) / Total Borrows
 - Above 1.5: Safe (green)
 - 1.0 - 1.5: Caution (yellow)
 - Below 1.0: Liquidation risk (red)
@@ -1157,11 +1242,61 @@ function toggleChat() {
     const modal = document.getElementById('chat-modal');
     modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
     
-    // Check if API key is set
-    if (modal.style.display === 'flex' && !openaiApiKey) {
-        setTimeout(() => {
-            addChatMessage('Welcome! To enable AI-powered assistance, please set your OpenAI API key using the settings button below. Your key is stored locally and never sent to our servers.', 'assistant');
-        }, 300);
+    // Update API key status when opening
+    if (modal.style.display === 'flex') {
+        updateApiKeyStatus();
+        if (!openaiApiKey) {
+            setTimeout(() => {
+                addChatMessage('Welcome! To enable AI-powered assistance, enter your OpenAI API key in the settings above. Your key is stored locally only.', 'assistant');
+            }, 300);
+        }
+    }
+}
+
+function saveApiKey() {
+    console.log('[Mini-DeFi] saveApiKey called');
+    const input = document.getElementById('api-key-input');
+    const key = input.value.trim();
+    console.log('[Mini-DeFi] Key length:', key.length);
+    
+    if (!key) {
+        showToast('Please enter an API key', 'warning');
+        return;
+    }
+    
+    if (!key.startsWith('sk-')) {
+        showToast('Invalid API key format. Keys start with "sk-"', 'error');
+        return;
+    }
+    
+    openaiApiKey = key;
+    localStorage.setItem('openai-api-key', key);
+    input.value = '';
+    updateApiKeyStatus();
+    addChatMessage('API key saved! You now have full AI assistance.', 'assistant');
+    showToast('API key saved successfully', 'success');
+}
+
+function clearApiKey() {
+    openaiApiKey = '';
+    localStorage.removeItem('openai-api-key');
+    chatHistory = [];
+    document.getElementById('api-key-input').value = '';
+    updateApiKeyStatus();
+    addChatMessage('API key cleared. Using basic responses.', 'assistant');
+    showToast('API key cleared', 'info');
+}
+
+function updateApiKeyStatus() {
+    const statusEl = document.getElementById('api-key-status');
+    if (!statusEl) return;
+    
+    if (openaiApiKey) {
+        statusEl.textContent = 'API key connected - Full AI assistance enabled';
+        statusEl.className = 'api-key-status connected';
+    } else {
+        statusEl.textContent = 'No API key set - Using basic responses';
+        statusEl.className = 'api-key-status';
     }
 }
 
@@ -1175,12 +1310,13 @@ async function sendChatMessage() {
     addChatMessage(message, 'user');
     input.value = '';
 
-    // Check for API key command
+    // Legacy command support (still works)
     if (message.toLowerCase().startsWith('/setkey ')) {
         const key = message.substring(8).trim();
         if (key.startsWith('sk-')) {
             openaiApiKey = key;
             localStorage.setItem('openai-api-key', key);
+            updateApiKeyStatus();
             addChatMessage('API key saved successfully! You can now chat with AI assistance.', 'assistant');
         } else {
             addChatMessage('Invalid API key format. OpenAI keys start with "sk-".', 'assistant');
@@ -1189,10 +1325,7 @@ async function sendChatMessage() {
     }
 
     if (message.toLowerCase() === '/clearkey') {
-        openaiApiKey = '';
-        localStorage.removeItem('openai-api-key');
-        chatHistory = [];
-        addChatMessage('API key cleared. Using local knowledge base.', 'assistant');
+        clearApiKey();
         return;
     }
 
@@ -1265,34 +1398,80 @@ async function getOpenAIResponse(userMessage) {
 }
 
 function generateLocalResponse(query) {
-    const queryLower = query.toLowerCase();
+    const q = query.toLowerCase();
 
-    // Local knowledge base for fallback
-    const knowledge = {
-        'deposit': 'To deposit: 1) Select assets in the Asset Browser. 2) Set proportions (must total 100%). 3) Enter USD amount in the Deposit tab. 4) Click "Execute Deposit".',
-        'withdraw': 'To withdraw: 1) Select deposited assets. 2) Switch to Withdraw tab. 3) Set proportions and amount. 4) Execute. Keep health factor above 1.0.',
-        'borrow': 'To borrow: 1) Ensure you have collateral deposited. 2) Select assets to borrow. 3) Use Borrow tab. 4) Set proportions and amount. 5) Execute.',
-        'repay': 'To repay: 1) Select borrowed assets. 2) Switch to Repay tab. 3) Set proportions and amount. 4) Execute to reduce your debt.',
-        'health factor': 'Health Factor = (Collateral × Collateral Factor) / Borrows. Keep above 1.0 to avoid liquidation. Above 1.5 is safe.',
-        'liquidation': 'Liquidation happens when health factor drops below 1.0. Others can repay your debt and claim collateral at a discount.',
-        'batch': 'Batch operations let you act on multiple assets. Select assets, set proportions (= 100%), enter amount, and execute.',
-        'connect': 'Click "Connect Wallet" in the top right corner. Approve the connection in MetaMask when prompted.',
-        'interest': 'Interest rates are dynamic based on utilization. Higher utilization = higher rates. Depositors earn, borrowers pay.',
-        'help': 'I can help with: deposits, withdrawals, borrowing, repaying, health factors, liquidation, and batch operations. What do you need?',
-        'api key': 'To enable AI chat, type: /setkey YOUR_OPENAI_API_KEY. To remove it: /clearkey. Your key is stored locally only.'
-    };
+    // Comprehensive knowledge base - no API key needed for basic help
+    const responses = [
+        // Greetings
+        { match: /^(hi|hello|hey|howdy|greetings)/i, 
+          response: "Hello! I'm your Mini-DeFi assistant. I can help you with:\n\n• **Depositing** assets to earn interest\n• **Borrowing** against your collateral\n• **Understanding** health factors & liquidation\n• **Managing** your DeFi portfolio\n\nWhat would you like to know?" },
+        
+        // Deposit questions
+        { match: /how.*(deposit|supply|add funds|put money)/i,
+          response: "**How to Deposit:**\n\n1) **Select Assets** - Click on assets in the left sidebar (Asset Browser)\n2) **Set Proportions** - Adjust how much goes to each asset (must total 100%)\n3) **Enter Amount** - Type the USD value in the Deposit panel\n4) **Execute** - Click 'Execute Deposit' and confirm in MetaMask\n\nTip: Use 'Equalize' to split evenly across selected assets!" },
+        
+        // Withdraw questions  
+        { match: /how.*(withdraw|remove|take out)/i,
+          response: "**How to Withdraw:**\n\n1) Select assets you've deposited in the Asset Browser\n2) Click the **Withdraw** tab in the Operation Panel\n3) Set proportions and enter amount to withdraw\n4) Click 'Execute Withdraw'\n\n**Important:** Withdrawing reduces collateral. Keep your Health Factor above 1.0 to avoid liquidation!" },
+        
+        // Borrow questions
+        { match: /how.*(borrow|take loan|get loan)/i,
+          response: "**How to Borrow:**\n\n1) First, deposit assets as collateral\n2) Select assets you want to borrow from Asset Browser\n3) Click the **Borrow** tab\n4) Enter amount (limited by your collateral x collateral factor)\n5) Execute and confirm\n\nYour borrowing power = Collateral Value x Collateral Factor" },
+        
+        // Repay questions
+        { match: /how.*(repay|pay back|return)/i,
+          response: "**How to Repay:**\n\n1) Select the assets you borrowed\n2) Click the **Repay** tab\n3) Set the amount to repay (including interest owed)\n4) Execute the transaction\n\nRepaying debt improves your Health Factor and frees up borrowing capacity." },
+        
+        // Health Factor
+        { match: /health factor|health score/i,
+          response: "**Health Factor Explained:**\n\n**Formula:** Health Factor = (Collateral x Collateral Factor) / Total Borrows\n\n- **Above 1.5** - Safe zone\n- **1.0 - 1.5** - Caution zone\n- **Below 1.0** - Liquidation risk!\n\n**Example:** $1000 collateral with 75% factor, $500 borrowed = HF of 1.5" },
+        
+        // Liquidation
+        { match: /liquidat/i,
+          response: "**Liquidation Explained:**\n\nLiquidation occurs when your Health Factor drops below 1.0.\n\n**What happens:**\n- Anyone can repay part of your debt\n- They receive your collateral at a discount (liquidation bonus)\n- You lose collateral but reduce debt\n\n**How to avoid:**\n- Keep Health Factor above 1.5\n- Monitor asset prices\n- Repay debt if HF drops" },
+        
+        // Collateral Factor
+        { match: /collateral factor/i,
+          response: "**Collateral Factor:**\n\nThe collateral factor (50-85%) determines how much you can borrow against an asset.\n\n**Example:**\n- Deposit $1000 USDC (75% collateral factor)\n- Maximum borrow = $1000 x 0.75 = $750\n\nStablecoins typically have higher factors (safer), volatile assets have lower factors." },
+        
+        // Interest rates
+        { match: /interest|rate|apy|yield/i,
+          response: "**Interest Rates:**\n\nInterest rates are dynamic based on **utilization** (borrowed/deposited):\n\n- **Low utilization** = Lower rates\n- **High utilization** = Higher rates\n\n**Depositors** earn interest (supply APY)\n**Borrowers** pay interest (borrow APY)\n\nRates adjust automatically to balance supply and demand." },
+        
+        // Batch operations
+        { match: /batch|multiple|several assets/i,
+          response: "**Batch Operations:**\n\nSelect multiple assets to deposit/withdraw/borrow/repay in one transaction!\n\n1) Click multiple assets in the Asset Browser\n2) Set proportions for each (total must = 100%)\n3) Click 'Equalize' to split evenly\n4) Enter total amount and execute\n\nSaves gas vs. individual transactions!" },
+        
+        // Connect wallet
+        { match: /connect|wallet|metamask/i,
+          response: "**Connecting Your Wallet:**\n\n1) Click **'Connect Wallet'** in the top-right corner\n2) Select MetaMask (or your wallet)\n3) Approve the connection request\n\n**Network:** Make sure you're on the correct network (Hardhat Local for testing)\n\nYour wallet address will appear once connected." },
+        
+        // What is this / getting started
+        { match: /what is|getting started|new here|explain|tutorial/i,
+          response: "**Welcome to Mini-DeFi!**\n\nThis is a decentralized lending platform where you can:\n\n- **Deposit** assets to earn interest\n- **Borrow** against your deposits\n- **Manage** a multi-asset portfolio\n\n**Getting Started:**\n1) Connect your wallet\n2) Deposit some assets as collateral\n3) (Optional) Borrow against your collateral\n4) Monitor your Health Factor\n\nAsk me about any specific feature!" },
+        
+        // Assets / tokens
+        { match: /asset|token|coin|which/i,
+          response: "**Available Assets:**\n\nThe platform supports 100+ assets across categories:\n\n• **USD Stablecoins:** USDC, USDT, DAI, etc.\n• **BTC Derivatives:** WBTC, renBTC, etc.\n• **ETH Derivatives:** WETH, stETH, rETH, etc.\n• **DeFi Tokens:** AAVE, UNI, CRV, etc.\n• **Layer 2:** ARB, OP, MATIC, etc.\n\nUse the category filter to browse, or search by name!" },
+        
+        // Price / oracle
+        { match: /price|oracle|value/i,
+          response: "**Price Feeds:**\n\nAsset prices come from our Price Oracle contract. Prices update when you:\n\n• Deposit or withdraw\n• Borrow or repay\n• Refresh the dashboard\n\nPrices affect your collateral value and Health Factor, so monitor them closely!" },
+        
+        // Thanks
+        { match: /thank|thanks|thx/i,
+          response: "You're welcome! Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" }
+    ];
 
-    for (const [key, value] of Object.entries(knowledge)) {
-        if (queryLower.includes(key)) {
-            return value;
+    // Find matching response
+    for (const item of responses) {
+        if (item.match.test(q)) {
+            return item.response;
         }
     }
 
-    if (queryLower.includes('hello') || queryLower.includes('hi')) {
-        return 'Hello! I\'m your DeFi assistant. ' + (openaiApiKey ? '' : 'For full AI capabilities, set your OpenAI API key with /setkey YOUR_KEY. ') + 'How can I help you today?';
-    }
-
-    return 'I can help with deposits, withdrawals, borrowing, repaying, health factors, and more. ' + (openaiApiKey ? 'Just ask!' : 'For smarter responses, set your OpenAI API key with /setkey YOUR_KEY');
+    // Default response with suggestions
+    return "I can help you with:\n\n• **\"How do I deposit?\"** - Step-by-step deposit guide\n• **\"What is health factor?\"** - Understand liquidation risk\n• **\"How to borrow?\"** - Borrowing tutorial\n• **\"Getting started\"** - Platform overview\n\nJust ask a question and I'll guide you!";
 }
 
 function addChatMessage(text, sender) {
@@ -1371,10 +1550,10 @@ function showToast(message, type = 'info') {
     
     // Set icon
     const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
-        info: 'ℹ'
+        success: '[OK]',
+        error: '[X]',
+        warning: '[!]',
+        info: '[i]'
     };
     iconEl.textContent = icons[type] || icons.info;
     
@@ -1431,9 +1610,126 @@ function debounce(func, wait) {
     };
 }
 
+// ============================================================================
+// Theme & Contrast Controls
+// ============================================================================
+
+/**
+ * Initialize theme and contrast controls
+ * Loads saved preferences from localStorage
+ */
+function initThemeControls() {
+    const themePanelBtn = document.getElementById('theme-toggle-btn');
+    const themePanel = document.getElementById('theme-panel');
+    const themePanelClose = document.getElementById('theme-panel-close');
+    const themeDayBtn = document.getElementById('theme-day');
+    const themeNightBtn = document.getElementById('theme-night');
+    const contrastSlider = document.getElementById('contrast-slider');
+    
+    // Load saved preferences
+    const savedTheme = localStorage.getItem('mini-defi-theme') || 'night';
+    const savedContrast = localStorage.getItem('mini-defi-contrast') || '1';
+    
+    // Apply saved theme
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeModeButtons(savedTheme);
+    
+    // Apply saved contrast
+    if (contrastSlider) {
+        contrastSlider.value = savedContrast;
+    }
+    applyContrast(savedContrast);
+    
+    // Add event listeners
+    themePanelBtn?.addEventListener('click', toggleThemePanel);
+    themePanelClose?.addEventListener('click', closeThemePanel);
+    
+    themeDayBtn?.addEventListener('click', () => setTheme('day'));
+    themeNightBtn?.addEventListener('click', () => setTheme('night'));
+    
+    contrastSlider?.addEventListener('input', (e) => applyContrast(e.target.value));
+    
+    // Close panel when clicking outside
+    document.addEventListener('click', (e) => {
+        if (themePanel?.classList.contains('open') && 
+            !themePanel.contains(e.target) && 
+            !themePanelBtn?.contains(e.target)) {
+            closeThemePanel();
+        }
+    });
+    
+    console.log(`[Mini-DeFi] Theme controls initialized: theme=${savedTheme}, contrast=${savedContrast}`);
+}
+
+/**
+ * Toggle theme settings panel visibility
+ */
+function toggleThemePanel() {
+    const themePanel = document.getElementById('theme-panel');
+    themePanel?.classList.toggle('open');
+}
+
+/**
+ * Close theme settings panel
+ */
+function closeThemePanel() {
+    const themePanel = document.getElementById('theme-panel');
+    themePanel?.classList.remove('open');
+}
+
+/**
+ * Set the current theme (day or night)
+ */
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('mini-defi-theme', theme);
+    updateThemeModeButtons(theme);
+    console.log(`[Mini-DeFi] Theme changed to: ${theme}`);
+}
+
+/**
+ * Update theme mode buttons (Day/Night toggle)
+ */
+function updateThemeModeButtons(theme) {
+    const themeDayBtn = document.getElementById('theme-day');
+    const themeNightBtn = document.getElementById('theme-night');
+    
+    if (theme === 'day') {
+        themeDayBtn?.classList.add('active');
+        themeNightBtn?.classList.remove('active');
+    } else {
+        themeDayBtn?.classList.remove('active');
+        themeNightBtn?.classList.add('active');
+    }
+}
+
+/**
+ * Apply contrast level
+ * @param {string} level - 0 = Low, 1 = Medium, 2 = High, 3 = Very High
+ */
+function applyContrast(level) {
+    const levels = ['low', 'medium', 'high', 'very-high'];
+    const labels = ['Low', 'Medium', 'High', 'Very High'];
+    const contrastValue = document.getElementById('contrast-value');
+    
+    const levelIndex = parseInt(level) || 1;
+    const contrastLevel = levels[levelIndex] || 'medium';
+    
+    document.documentElement.setAttribute('data-contrast', contrastLevel);
+    
+    if (contrastValue) {
+        contrastValue.textContent = labels[levelIndex] || 'Medium';
+    }
+    
+    localStorage.setItem('mini-defi-contrast', level.toString());
+}
+
 // Make functions available globally
 window.toggleAssetSelection = toggleAssetSelection;
 window.removeFromSelection = removeFromSelection;
 window.updateProportion = updateProportion;
 window.quickAction = quickAction;
 window.loadAllAssets = loadAllAssets;
+window.setTheme = setTheme;
+window.applyContrast = applyContrast;
+window.toggleThemePanel = toggleThemePanel;
