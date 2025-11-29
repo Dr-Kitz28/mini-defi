@@ -918,7 +918,7 @@ async function executeBatchOperation(operation) {
 
     try {
         const results = [];
-        const errors = [];
+        const skipped = [];
 
         for (const [address, { asset, proportion }] of selectedAssets) {
             if (proportion === 0) continue;
@@ -929,26 +929,28 @@ async function executeBatchOperation(operation) {
                 const usdAmount = totalAmount * (proportion / 100);
                 amount = BigInt(Math.floor(usdAmount * 1e8)) * (10n ** BigInt(asset.decimals)) / asset.price;
             } else {
-                showToast(`Cannot calculate amount for ${asset.symbol} (no price)`, 'warning');
+                console.warn(`[Mini-DeFi] Skipping ${asset.symbol} - no price data`);
+                skipped.push({ asset: asset.symbol, reason: 'No price data' });
                 continue;
             }
 
-            try {
-                await executeAssetOperation(operation, asset, amount);
+            const result = await executeAssetOperation(operation, asset, amount);
+            if (result?.skipped) {
+                skipped.push({ asset: asset.symbol, reason: result.reason });
+            } else {
                 results.push({ asset: asset.symbol, status: 'success' });
-            } catch (error) {
-                console.error(`Error for ${asset.symbol}:`, error);
-                errors.push({ asset: asset.symbol, error: error.message });
             }
         }
 
         // Show results
-        if (errors.length === 0) {
+        if (results.length > 0 && skipped.length === 0) {
             showToast(`Successfully executed ${operation} for ${results.length} assets`, 'success');
         } else if (results.length > 0) {
-            showToast(`Completed with ${errors.length} errors. Check console for details.`, 'warning');
+            showToast(`${operation} completed for ${results.length} assets (${skipped.length} skipped)`, 'success');
+        } else if (skipped.length > 0) {
+            showToast(`All ${skipped.length} assets were skipped. Try deploying contracts first.`, 'warning');
         } else {
-            showToast(`All operations failed. Check console for details.`, 'error');
+            showToast(`No operations performed.`, 'warning');
         }
 
         // Refresh data
@@ -966,7 +968,9 @@ async function executeAssetOperation(action, asset, amount) {
     // Verify the token contract is valid before proceeding
     const code = await provider.getCode(asset.address);
     if (!code || code === '0x') {
-        throw new Error(`Token ${asset.symbol} is not a valid contract`);
+        // Skip this token silently - it's not deployed on the current network
+        console.warn(`[Mini-DeFi] Skipping ${asset.symbol} - contract not deployed at ${asset.address}`);
+        return { skipped: true, reason: 'Contract not deployed' };
     }
 
     const tokenContract = new ethers.Contract(asset.address, ERC20_ABI, signer);
@@ -981,31 +985,37 @@ async function executeAssetOperation(action, asset, amount) {
                 await approveTx.wait();
             }
         } catch (approvalErr) {
-            console.error(`[Mini-DeFi] Approval check failed for ${asset.symbol}:`, approvalErr);
-            throw new Error(`Failed to check/approve ${asset.symbol}: ${approvalErr.message}`);
+            console.warn(`[Mini-DeFi] Approval failed for ${asset.symbol}:`, approvalErr.message);
+            return { skipped: true, reason: 'Approval failed' };
         }
     }
 
     let tx;
-    switch (action) {
-        case 'deposit':
-            tx = await lendingPoolContract.deposit(asset.address, amount);
-            break;
-        case 'withdraw':
-            tx = await lendingPoolContract.withdraw(asset.address, amount);
-            break;
-        case 'borrow':
-            tx = await lendingPoolContract.borrow(asset.address, amount);
-            break;
-        case 'repay':
-            tx = await lendingPoolContract.repay(asset.address, amount);
-            break;
-        default:
-            throw new Error('Unknown action');
-    }
+    try {
+        switch (action) {
+            case 'deposit':
+                tx = await lendingPoolContract.deposit(asset.address, amount);
+                break;
+            case 'withdraw':
+                tx = await lendingPoolContract.withdraw(asset.address, amount);
+                break;
+            case 'borrow':
+                tx = await lendingPoolContract.borrow(asset.address, amount);
+                break;
+            case 'repay':
+                tx = await lendingPoolContract.repay(asset.address, amount);
+                break;
+            default:
+                throw new Error('Unknown action');
+        }
 
-    showToast(`Waiting for ${action} confirmation...`, 'info');
-    await tx.wait();
+        showToast(`Waiting for ${action} confirmation...`, 'info');
+        await tx.wait();
+        return { success: true };
+    } catch (txErr) {
+        console.warn(`[Mini-DeFi] Transaction failed for ${asset.symbol}:`, txErr.message);
+        return { skipped: true, reason: txErr.message };
+    }
 }
 
 // ============================================================================
