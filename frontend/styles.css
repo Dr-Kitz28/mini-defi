@@ -1599,12 +1599,12 @@ body {
 }
 
 /* ============================================
-   Inline Display Settings (Top Right Corner)
+   Display Settings (Bottom Right Corner)
    ============================================ */
 .display-settings-inline {
   position: fixed;
-  top: 70px;
-  right: 16px;
+  bottom: 20px;
+  right: 20px;
   z-index: 999;
   display: flex;
   align-items: center;
@@ -1613,7 +1613,7 @@ body {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: 8px 12px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Theme mode toggle (Sliding Day/Night Switch) */
