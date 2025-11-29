@@ -14,6 +14,8 @@ let assets = []; // All loaded assets
 let selectedAssets = new Map(); // address -> { asset, proportion }
 let userPositions = {}; // User's positions per asset
 let currentOperation = 'deposit';
+let openaiApiKey = localStorage.getItem('openai-api-key') || '';
+let chatHistory = [];
 
 // Contract ABIs (minimal for required functions)
 const LENDING_POOL_ABI = [
@@ -345,7 +347,7 @@ async function loadAllAssets() {
                         symbol: symbol.replace(/_\d+$/, ''), // Remove version suffix like _0, _1
                         name: name,
                         decimals: Number(decimals),
-                        price: parseFloat(assetInfo.price) || 1,
+                        price: BigInt(Math.floor((parseFloat(assetInfo.price) || 1) * 1e8)),
                         collateralFactor: parseFloat(assetInfo.collateralFactor) || 0.5,
                         category: assetInfo.category || 'Other',
                         balance: balance
@@ -1167,9 +1169,6 @@ async function refreshData() {
 // RAG Chat Agent with OpenAI Integration
 // ============================================================================
 
-// OpenAI API configuration - User needs to set their API key
-let openaiApiKey = localStorage.getItem('openai-api-key') || '';
-
 // System prompt with comprehensive knowledge about the platform
 const SYSTEM_PROMPT = `You are an AI assistant for the Mini-DeFi Multi-Asset Lending Platform. You help users understand and use the platform effectively.
 
@@ -1234,9 +1233,6 @@ ${(() => {
 })()}
 
 Be helpful, concise, and guide users step-by-step. If asked about something outside the platform, politely redirect to platform features.`;
-
-// Conversation history for context
-let chatHistory = [];
 
 function toggleChat() {
     const modal = document.getElementById('chat-modal');
