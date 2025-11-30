@@ -311,4 +311,62 @@ contract LendingPool is Ownable, ReentrancyGuard {
 
         interest = updatedDebt - user.borrowPrincipal;
     }
+
+        // -------- PUBLIC TEST-COMPATIBLE EXTERNALS ------- //
+
+    /// @notice Public wrapper for accruing interest on a specific asset
+    function accrueInterest(address _asset) external {
+        _accrueInterest(_asset);
+    }
+
+    /// @notice Helper to fetch the total current debt of a user for an asset
+    function getTotalDebt(address _user, address _asset) external view returns (uint256) {
+        UserAssetAccount memory user = userAccounts[_user][_asset];
+        PoolAssetAccount memory pool = poolAccounts[_asset];
+
+        if (user.borrowPrincipal == 0) return 0;
+        return (user.borrowPrincipal * pool.borrowIndex) / 
+            (user.borrowIndex > 0 ? user.borrowIndex : PRECISION);
+    }
+
+    /// @notice Liquidates unhealthy positions assuming asset = collateral
+    function liquidate(address _borrower, address _asset, uint256 _repayAmount) external nonReentrant {
+        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+        if (_repayAmount == 0) revert ZeroAmount();
+
+        _accrueInterest(_asset);
+
+        (uint256 collateralValue, uint256 debtValue) = _getAccountLiquidity(_borrower);
+        if (collateralValue >= debtValue) revert LiquidationNotPossible();
+
+        UserAssetAccount storage userAcc = userAccounts[_borrower][_asset];
+        PoolAssetAccount storage poolAcc = poolAccounts[_asset];
+
+        uint256 totalDebt = (userAcc.borrowPrincipal * poolAcc.borrowIndex) /
+            (userAcc.borrowIndex > 0 ? userAcc.borrowIndex : PRECISION);
+
+        uint256 repayAmount = _repayAmount >= totalDebt ? totalDebt : _repayAmount;
+
+        IERC20Metadata(_asset).safeTransferFrom(msg.sender, address(this), repayAmount);
+
+        uint256 seizedShares = _getSharesForAmount(_asset, repayAmount);
+        if (seizedShares > userAcc.shares) seizedShares = userAcc.shares;
+
+        userAcc.borrowPrincipal = totalDebt - repayAmount;
+        userAcc.borrowIndex = userAcc.borrowPrincipal == 0 ? 0 : poolAcc.borrowIndex;
+        userAcc.shares -= seizedShares;
+        poolAcc.totalBorrows -= repayAmount;
+        poolAcc.totalShares -= seizedShares;
+
+        emit Liquidate(
+            msg.sender,
+            _borrower,
+            _asset,
+            _asset,
+            repayAmount,
+            seizedShares
+        );
+    }
+
+
 }
