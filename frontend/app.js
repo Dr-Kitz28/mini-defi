@@ -14,8 +14,15 @@ let assets = []; // All loaded assets
 let selectedAssets = new Map(); // address -> { asset, proportion }
 let userPositions = {}; // User's positions per asset
 let currentOperation = 'deposit';
-let openaiApiKey = localStorage.getItem('openai-api-key') || '';
+
+// OpenAI API key - users must set their own key via /setkey command or localStorage
+// No default key - use local Mistral-7B model instead (type /local in chat)
+let openaiApiKey = localStorage.getItem('openai-api-key') || null;
 let chatHistory = [];
+
+// Local RAG server configuration
+const LOCAL_RAG_URL = 'http://localhost:5000';
+let useLocalRAG = localStorage.getItem('use-local-rag') === 'true';
 
 // Contract ABIs (minimal for required functions)
 const LENDING_POOL_ABI = [
@@ -1211,7 +1218,7 @@ async function refreshData() {
 // ============================================================================
 
 // System prompt with comprehensive knowledge about the platform
-const SYSTEM_PROMPT = `You are an AI assistant for the Mini-DeFi Multi-Asset Lending Platform. You help users understand and use the platform effectively.
+const SYSTEM_PROMPT = `You are an AI assistant for the Mini-DeFi Multi-Asset Lending Platform. You help users understand and use the platform effectively. You are also a helpful general assistant that can answer questions about cryptocurrency, blockchain, DeFi concepts, and general knowledge.
 
 ## Platform Overview
 Mini-DeFi is a decentralized lending platform supporting 10,000+ asset classes. Users can:
@@ -1265,6 +1272,14 @@ Five operations available:
 - Approve connection in MetaMask
 - Supported networks: Ethereum, Polygon, Hardhat local
 
+## General Knowledge
+You can also answer general questions about:
+- Cryptocurrency and blockchain technology
+- DeFi concepts (liquidity pools, AMMs, yield farming, etc.)
+- Smart contracts and Ethereum
+- Web3 and decentralized applications
+- General knowledge questions unrelated to DeFi
+
 ## User's Current Context
 ${(() => {
     let context = '';
@@ -1273,7 +1288,7 @@ ${(() => {
     return context || '- No wallet connected yet';
 })()}
 
-Be helpful, concise, and guide users step-by-step. If asked about something outside the platform, politely redirect to platform features.`;
+Be helpful, concise, and friendly. You can answer questions about both the platform AND general topics. If asked about something outside your knowledge, be honest about limitations.`;
 
 function toggleChat() {
     const modal = document.getElementById('chat-modal');
@@ -1365,13 +1380,54 @@ async function sendChatMessage() {
         clearApiKey();
         return;
     }
+    
+    // Command: /local - Toggle local RAG mode
+    if (message.toLowerCase() === '/local') {
+        toggleLocalRAG();
+        return;
+    }
+    
+    // Command: /status - Show current AI mode status
+    if (message.toLowerCase() === '/status') {
+        const mode = useLocalRAG ? 'Local Mistral-7B (offline)' : 'OpenAI API';
+        const localHealthy = await checkLocalRAGHealth();
+        const localStatus = localHealthy ? '✅ Running' : '❌ Not running';
+        addChatMessage(
+            `**AI Mode Status:**\n\n` +
+            `• Current mode: **${mode}**\n` +
+            `• Local RAG server: ${localStatus}\n` +
+            `• OpenAI key: ${openaiApiKey ? '✅ Set' : '❌ Not set'}\n\n` +
+            `Commands: \`/local\` to toggle mode, \`/setkey\` to set API key`,
+            'assistant'
+        );
+        return;
+    }
 
     // Show typing indicator
     const typingId = showTypingIndicator();
 
     try {
         let response;
-        if (openaiApiKey) {
+        
+        // Try local RAG first if enabled
+        if (useLocalRAG) {
+            const localHealthy = await checkLocalRAGHealth();
+            if (localHealthy) {
+                response = await getLocalRAGResponse(message);
+            } else {
+                // Local server not running, fallback to pattern-based
+                removeTypingIndicator(typingId);
+                addChatMessage(
+                    '⚠️ **Local RAG server not running.**\n\n' +
+                    'Start it with: `python scripts/local_rag_server.py`\n\n' +
+                    'Falling back to built-in responses...',
+                    'assistant'
+                );
+                response = generateLocalResponse(message);
+                addChatMessage(response, 'assistant');
+                return;
+            }
+        } else if (openaiApiKey) {
             response = await getOpenAIResponse(message);
         } else {
             response = generateLocalResponse(message);
@@ -1384,13 +1440,16 @@ async function sendChatMessage() {
         console.error('Chat error:', error);
         
         if (error.message.includes('401')) {
-            addChatMessage('Invalid API key. Please check your OpenAI API key with /setkey YOUR_KEY', 'assistant');
+            addChatMessage('❌ **Invalid API key.** Please check your OpenAI API key.\n\nType `/setkey YOUR_KEY` to set a new key.', 'assistant');
         } else if (error.message.includes('429')) {
-            addChatMessage('Rate limit reached. Please wait a moment and try again.', 'assistant');
+            addChatMessage('⏳ **Rate limit reached.** The API quota has been exceeded.\n\nPlease wait a moment and try again, or check your OpenAI billing.\n\n**Tip:** Type `/local` to switch to local AI mode (no API needed).', 'assistant');
+        } else if (error.message.includes('insufficient_quota')) {
+            addChatMessage('💳 **API quota exceeded.** Your OpenAI account has no remaining credits.\n\nPlease add credits at platform.openai.com or use a different API key.\n\n**Tip:** Type `/local` to switch to local AI mode (no API needed).', 'assistant');
         } else {
-            // Fallback to local response
+            // Show error but also provide local response
+            console.error('OpenAI error, falling back to local:', error.message);
             const localResponse = generateLocalResponse(message);
-            addChatMessage(localResponse, 'assistant');
+            addChatMessage(localResponse + '\n\n*(Using offline mode due to API error)*', 'assistant');
         }
     }
 }
@@ -1422,7 +1481,10 @@ async function getOpenAIResponse(userMessage) {
     });
 
     if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+        console.error('OpenAI API Error:', errorMessage);
+        throw new Error(`OpenAI API error: ${response.status} - ${errorMessage}`);
     }
 
     const data = await response.json();
@@ -1432,6 +1494,52 @@ async function getOpenAIResponse(userMessage) {
     chatHistory.push({ role: 'assistant', content: assistantMessage });
     
     return assistantMessage;
+}
+
+async function getLocalRAGResponse(userMessage) {
+    /**
+     * Calls the local RAG server (Mistral-7B + FAISS).
+     * Server must be running: python scripts/local_rag_server.py
+     */
+    try {
+        const response = await fetch(`${LOCAL_RAG_URL}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: userMessage })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Local RAG server error: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        return data.response || data.answer || data.message;
+    } catch (error) {
+        console.error('Local RAG error:', error);
+        throw error;
+    }
+}
+
+async function checkLocalRAGHealth() {
+    /**
+     * Check if local RAG server is running and healthy.
+     */
+    try {
+        const response = await fetch(`${LOCAL_RAG_URL}/health`, { 
+            method: 'GET',
+            signal: AbortSignal.timeout(2000) // 2 second timeout
+        });
+        return response.ok;
+    } catch {
+        return false;
+    }
+}
+
+function toggleLocalRAG() {
+    useLocalRAG = !useLocalRAG;
+    localStorage.setItem('use-local-rag', useLocalRAG ? 'true' : 'false');
+    const mode = useLocalRAG ? 'Local Mistral-7B (offline)' : 'OpenAI API';
+    addChatMessage(`✅ Switched to **${mode}** mode.`, 'assistant');
 }
 
 function generateLocalResponse(query) {
@@ -1497,7 +1605,15 @@ function generateLocalResponse(query) {
         
         // Thanks
         { match: /thank|thanks|thx/i,
-          response: "You're welcome! Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" }
+          response: "You're welcome! Feel free to ask if you have more questions about DeFi lending, health factors, or anything else!" },
+          
+        // Help with website
+        { match: /help.*(website|site|page|figur|understand|use|navigate)/i,
+          response: "**Welcome! Here's how to use Mini-DeFi:**\n\n**1. Connect Wallet** (top right button)\n- Click 'Connect Wallet' and approve in MetaMask\n- Make sure you're on Hardhat Local network\n\n**2. Browse Assets** (left sidebar)\n- Click on assets to select them\n- Use search or category filter\n\n**3. Perform Operations**\n- **Deposit:** Supply tokens to earn interest\n- **Borrow:** Take loans against collateral\n- **Withdraw/Repay:** Manage your positions\n\n**4. Monitor Health Factor**\n- Keep it above 1.0 to avoid liquidation\n- Higher is safer (aim for 1.5+)\n\nWhat would you like to learn more about?" },
+          
+        // General/generic questions
+        { match: /^(help|assist|support|guide|show)/i,
+          response: "I'm here to help! I can assist you with:\n\n**Platform Operations:**\n• How to deposit assets\n• How to borrow tokens\n• Managing withdrawals & repayments\n\n**Understanding DeFi:**\n• Health Factor explained\n• Collateral & liquidation\n• Interest rates\n\n**Technical Help:**\n• Connecting your wallet\n• Selecting assets\n• Batch operations\n\nJust ask me anything!" }
     ];
 
     // Find matching response
@@ -1508,7 +1624,7 @@ function generateLocalResponse(query) {
     }
 
     // Default response with suggestions
-    return "I can help you with:\n\n• **\"How do I deposit?\"** - Step-by-step deposit guide\n• **\"What is health factor?\"** - Understand liquidation risk\n• **\"How to borrow?\"** - Borrowing tutorial\n• **\"Getting started\"** - Platform overview\n\nJust ask a question and I'll guide you!";
+    return "I'm your Mini-DeFi assistant! Here are some things I can help with:\n\n• **\"Help me with the website\"** - Platform walkthrough\n• **\"How do I deposit?\"** - Step-by-step guide\n• **\"What is health factor?\"** - Understand liquidation risk\n• **\"How to borrow?\"** - Borrowing tutorial\n• **\"Getting started\"** - Platform overview\n\nJust ask a question and I'll guide you!";
 }
 
 function addChatMessage(text, sender) {

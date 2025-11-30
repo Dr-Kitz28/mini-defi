@@ -1,6 +1,8 @@
 # Mini DeFi - Multi-Asset Lending Pool
 
-A production-ready decentralized lending protocol built with Hardhat/Solidity. Supports **multiple assets**, **cross-collateral borrowing**, and **dynamic interest rates pegged to real-world repo rates** for fiat currency integration.
+A production-ready decentralized lending protocol built with Hardhat/Solidity. Supports **multiple assets**, **cross-collateral borrowing**, **dynamic interest rates pegged to real-world repo rates**, and an **AI-powered RAG assistant** using Mistral-7B for user guidance.
+
+[![GitHub](https://img.shields.io/badge/GitHub-Dr--Kitz28%2Fmini--defi-blue?logo=github)](https://github.com/Dr-Kitz28/mini-defi)
 
 ---
 
@@ -34,6 +36,177 @@ A production-ready decentralized lending protocol built with Hardhat/Solidity. S
 - Real-time asset prices and positions
 - AI-powered chat assistant for DeFi guidance
 - Batch operations for multi-asset deposits/withdrawals
+
+---
+
+## 🚀 Developer Setup Guide
+
+This section provides detailed instructions for developers to set up and run the complete Mini-DeFi platform, including the blockchain, frontend, and AI assistant.
+
+### Prerequisites
+
+Before starting, ensure you have the following installed:
+
+| Dependency | Version | Purpose |
+|------------|---------|---------|
+| **Node.js** | v18+ | JavaScript runtime |
+| **npm** | v9+ | Package manager |
+| **Python** | 3.9+ | Local RAG server |
+| **MetaMask** | Latest | Wallet connection |
+| **Git** | Latest | Version control |
+
+### Step 1: Clone the Repository
+
+```powershell
+git clone https://github.com/Dr-Kitz28/mini-defi.git
+cd mini-defi
+```
+
+### Step 2: Install Node.js Dependencies
+
+```powershell
+npm install
+```
+
+### Step 3: Install Python Dependencies (for AI Assistant)
+
+```powershell
+pip install flask sentence-transformers faiss-cpu ctransformers python-dotenv
+```
+
+Or use the requirements file:
+
+```powershell
+pip install -r requirements-local-rag.txt
+```
+
+### Step 4: Download the AI Model (Mistral-7B)
+
+The AI chat assistant uses **Mistral-7B-Instruct** (4-bit quantized, ~4.4GB). Download it to the `models/` folder:
+
+**Option A: PowerShell (Windows)**
+
+```powershell
+New-Item -ItemType Directory -Force -Path "models"
+Invoke-WebRequest -Uri "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf" -OutFile "models/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+```
+
+**Option B: curl (Linux/Mac)**
+
+```bash
+mkdir -p models
+curl -L -o models/mistral-7b-instruct-v0.2.Q4_K_M.gguf \
+  "https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/resolve/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+```
+
+**Option C: Direct Download**
+
+Download manually from: [Hugging Face - TheBloke/Mistral-7B-Instruct-v0.2-GGUF](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF/blob/main/mistral-7b-instruct-v0.2.Q4_K_M.gguf)
+
+Place the file in: `mini-defi/models/mistral-7b-instruct-v0.2.Q4_K_M.gguf`
+
+---
+
+## 🖥️ Running the Platform (3 Terminals)
+
+You need **3 separate terminal windows** to run all components:
+
+### Terminal 1: Hardhat Blockchain Node
+
+```powershell
+cd mini-defi
+npx hardhat node
+```
+
+Keep this terminal running. You should see:
+```
+Started HTTP and WebSocket JSON-RPC server at http://127.0.0.1:8545/
+```
+
+### Terminal 2: Deploy Contracts & Start Frontend
+
+```powershell
+cd mini-defi
+
+# Deploy 100 assets (wait for Hardhat node to be ready first)
+npx hardhat run scripts/deploy-many-assets.js --network localhost
+
+# Start the frontend server
+npm run serve
+```
+
+The frontend will be available at: **http://localhost:8000**
+
+### Terminal 3: Local RAG Server (AI Assistant)
+
+```powershell
+cd mini-defi
+python scripts/local_rag_server.py --threads 8
+```
+
+Adjust `--threads` based on your CPU (recommended: number of performance cores).
+
+You should see:
+```
+[RAG] Server starting on http://localhost:5000
+[RAG] LLM loaded successfully!
+```
+
+---
+
+## ✅ Verifying All Services Are Running
+
+Run these commands to check each service:
+
+```powershell
+# Check Hardhat node (port 8545)
+netstat -ano | findstr ":8545"
+
+# Check Frontend (port 8000)
+netstat -ano | findstr ":8000"
+
+# Check RAG Server (port 5000)
+netstat -ano | findstr ":5000"
+```
+
+All three should show `LISTENING` status.
+
+---
+
+## 💬 Using the AI Chat Assistant
+
+1. Open the website at http://localhost:8000
+2. Click the **chat button** (bottom-right corner)
+3. Type `/local` to switch to local Mistral-7B mode
+4. Type `/status` to verify the AI is connected
+5. Ask questions like:
+   - "How do I deposit assets?"
+   - "What is health factor?"
+   - "How does liquidation work?"
+   - "Explain the smart contracts"
+
+### Chat Commands
+
+| Command | Description |
+|---------|-------------|
+| `/local` | Toggle between OpenAI API and local Mistral-7B |
+| `/status` | Check current AI mode and server health |
+| `/setkey YOUR_KEY` | Set OpenAI API key (optional) |
+| `/clearkey` | Clear saved API key |
+
+---
+
+## 🔧 Hardware Requirements for AI
+
+The local Mistral-7B model runs on CPU. Recommended specs:
+
+| Component | Minimum | Recommended |
+|-----------|---------|-------------|
+| **RAM** | 8GB | 16GB+ |
+| **CPU** | 4 cores | 8+ cores |
+| **Storage** | 5GB free | 10GB free |
+
+**Note:** GPU acceleration is not required. The model uses efficient 4-bit quantization.
 
 ---
 

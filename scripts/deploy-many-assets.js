@@ -5,6 +5,12 @@ const fs = require("fs");
 // Configuration - adjust as needed
 const NUM_ASSETS = process.env.NUM_ASSETS ? parseInt(process.env.NUM_ASSETS) : 100;
 
+// Test wallet addresses to fund with tokens (add your MetaMask addresses here)
+const TEST_WALLETS = [
+  "0xa8a2082b012d8e84fd3463561cd94c15efda3bdd", // User's MetaMask wallet
+  "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", // Hardhat default deployer
+];
+
 // Asset categories with realistic naming
 const ASSET_CATEGORIES = [
   { prefix: "USD", names: ["USDC", "USDT", "DAI", "BUSD", "TUSD", "USDP", "GUSD", "LUSD", "FRAX", "MIM"], basePrice: 1 },
@@ -134,6 +140,19 @@ async function main() {
     // Configure each token
     for (const { asset, token } of results) {
       const tokenAddress = await token.getAddress();
+      
+      // Mint tokens to deployer AND test wallets (1 million tokens each)
+      const mintAmount = ethers.parseUnits("1000000", 18);
+      await token.mint(deployer.address, mintAmount);
+      
+      // Mint to all test wallets
+      for (const wallet of TEST_WALLETS) {
+        try {
+          await token.mint(wallet, mintAmount);
+        } catch (e) {
+          // Ignore if wallet is invalid
+        }
+      }
       
       // Set price (8 decimals)
       const priceWei = ethers.parseUnits(asset.price, 8);
