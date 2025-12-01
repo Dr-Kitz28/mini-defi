@@ -8,12 +8,31 @@ A decentralized lending protocol built with Hardhat/Solidity for **learning and 
 
 ## ⚠️ Important: Test Networks Only
 
-> **This project is designed for LOCAL TEST NETWORKS ONLY.**
+> **This project is designed for LOCAL TEST NETWORKS ONLY (FREE, NO GAS FEES).**
 >
-> - ✅ **Supported:** Hardhat Local (localhost:8545), Ganache
-> - ⛔ **Blocked:** Ethereum Mainnet, Polygon, BSC, Arbitrum, etc.
+> - ✅ **RECOMMENDED:** Hardhat Local (localhost:8545) - **100% FREE**
+> - ✅ **Also supported:** Ganache, Local forks
+> - ⚠️ **Public testnets (Sepolia, etc.):** Require testnet ETH from faucets (free but slow)
+> - ⛔ **BLOCKED:** Ethereum Mainnet, Polygon, BSC, Arbitrum, etc. (cost real money!)
 >
-> The frontend will display a warning and block functionality if you connect to a mainnet network. This protects you from accidentally spending real ETH/tokens on an unaudited demo project.
+> **Why use Hardhat Local instead of Sepolia?**
+> - Hardhat Local: Instant transactions, unlimited free ETH, no waiting for faucets
+> - Sepolia: Requires testnet ETH from faucets (can be slow/rate-limited), still costs "gas" (free testnet ETH)
+>
+> The frontend will display a warning if you connect to a mainnet network.
+
+---
+
+## 💰 Understanding Gas Fees
+
+| Network | Gas Cost | Speed | Recommendation |
+|---------|----------|-------|----------------|
+| **Hardhat Local** | FREE (unlimited ETH) | Instant | ✅ **Best for development** |
+| **Ganache** | FREE | Instant | ✅ Good alternative |
+| **Sepolia Testnet** | Free testnet ETH | 12s blocks | ⚠️ Need faucet ETH |
+| **Ethereum Mainnet** | $5-50+ per tx | 12s blocks | ⛔ DO NOT USE |
+
+**If you're being asked to pay real money, you're on the wrong network!** Switch to Hardhat Local (Chain ID: 31337).
 
 ---
 
@@ -139,8 +158,11 @@ Started HTTP and WebSocket JSON-RPC server at http://127.0.0.1:8545/
 ```powershell
 cd mini-defi
 
-# Deploy 100 assets (wait for Hardhat node to be ready first)
+# Deploy 10,000 assets (default) - takes ~3-5 minutes on local network
 npx hardhat run scripts/deploy-many-assets.js --network localhost
+
+# Or deploy fewer assets for faster testing:
+# NUM_ASSETS=100 npx hardhat run scripts/deploy-many-assets.js --network localhost
 
 # Start the frontend server
 npm run serve
