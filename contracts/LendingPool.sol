@@ -329,40 +329,69 @@ contract LendingPool is Ownable, ReentrancyGuard {
             (user.borrowIndex > 0 ? user.borrowIndex : PRECISION);
     }
 
-    /// @notice Liquidates unhealthy positions assuming asset = collateral
-    function liquidate(address _borrower, address _asset, uint256 _repayAmount) external nonReentrant {
-        if (!assetConfigs[_asset].isActive) revert AssetNotListed();
+    /// @notice Calculate seized collateral shares for liquidation
+    function _calculateSeizedShares(
+        address _debtAsset,
+        address _collateralAsset,
+        uint256 _repayAmount
+    ) internal view returns (uint256) {
+        uint256 debtAssetPrice = priceOracle.getPrice(_debtAsset);
+        uint256 collateralAssetPrice = priceOracle.getPrice(_collateralAsset);
+        uint256 repayValue = (_repayAmount * debtAssetPrice) / (10 ** IERC20Metadata(_debtAsset).decimals());
+        uint256 liquidationBonus = assetConfigs[_collateralAsset].liquidationBonus;
+        uint256 seizedCollateralValue = repayValue + (repayValue * liquidationBonus) / PRECISION;
+        uint256 seizedCollateralAmount = (seizedCollateralValue * (10 ** IERC20Metadata(_collateralAsset).decimals())) / collateralAssetPrice;
+        return _getSharesForAmount(_collateralAsset, seizedCollateralAmount);
+    }
+
+    /// @notice Liquidates unhealthy positions with separate collateral and debt assets
+    function liquidate(
+        address _borrower,
+        address _debtAsset,
+        address _collateralAsset,
+        uint256 _repayAmount
+    ) external nonReentrant {
+        if (!assetConfigs[_debtAsset].isActive) revert AssetNotListed();
+        if (!assetConfigs[_collateralAsset].isActive) revert AssetNotListed();
         if (_repayAmount == 0) revert ZeroAmount();
 
-        _accrueInterest(_asset);
+        _accrueInterest(_debtAsset);
+        _accrueInterest(_collateralAsset);
 
-        (uint256 collateralValue, uint256 debtValue) = _getAccountLiquidity(_borrower);
-        if (collateralValue >= debtValue) revert LiquidationNotPossible();
+        {
+            (uint256 collateralValue, uint256 debtValue) = _getAccountLiquidity(_borrower);
+            if (collateralValue >= debtValue) revert LiquidationNotPossible();
+        }
 
-        UserAssetAccount storage userAcc = userAccounts[_borrower][_asset];
-        PoolAssetAccount storage poolAcc = poolAccounts[_asset];
+        UserAssetAccount storage borrowerDebtAcc = userAccounts[_borrower][_debtAsset];
+        PoolAssetAccount storage debtPoolAcc = poolAccounts[_debtAsset];
 
-        uint256 totalDebt = (userAcc.borrowPrincipal * poolAcc.borrowIndex) /
-            (userAcc.borrowIndex > 0 ? userAcc.borrowIndex : PRECISION);
+        uint256 totalDebt = (borrowerDebtAcc.borrowPrincipal * debtPoolAcc.borrowIndex) /
+            (borrowerDebtAcc.borrowIndex > 0 ? borrowerDebtAcc.borrowIndex : PRECISION);
 
         uint256 repayAmount = _repayAmount >= totalDebt ? totalDebt : _repayAmount;
 
-        IERC20Metadata(_asset).safeTransferFrom(msg.sender, address(this), repayAmount);
+        IERC20Metadata(_debtAsset).safeTransferFrom(msg.sender, address(this), repayAmount);
 
-        uint256 seizedShares = _getSharesForAmount(_asset, repayAmount);
-        if (seizedShares > userAcc.shares) seizedShares = userAcc.shares;
+        uint256 seizedShares = _calculateSeizedShares(_debtAsset, _collateralAsset, repayAmount);
 
-        userAcc.borrowPrincipal = totalDebt - repayAmount;
-        userAcc.borrowIndex = userAcc.borrowPrincipal == 0 ? 0 : poolAcc.borrowIndex;
-        userAcc.shares -= seizedShares;
-        poolAcc.totalBorrows -= repayAmount;
-        poolAcc.totalShares -= seizedShares;
+        UserAssetAccount storage borrowerCollateralAcc = userAccounts[_borrower][_collateralAsset];
+        if (seizedShares > borrowerCollateralAcc.shares) seizedShares = borrowerCollateralAcc.shares;
+
+        // Update borrower's debt
+        borrowerDebtAcc.borrowPrincipal = totalDebt - repayAmount;
+        borrowerDebtAcc.borrowIndex = borrowerDebtAcc.borrowPrincipal == 0 ? 0 : debtPoolAcc.borrowIndex;
+        debtPoolAcc.totalBorrows -= repayAmount;
+
+        // Transfer collateral shares from borrower to liquidator
+        borrowerCollateralAcc.shares -= seizedShares;
+        userAccounts[msg.sender][_collateralAsset].shares += seizedShares;
 
         emit Liquidate(
             msg.sender,
             _borrower,
-            _asset,
-            _asset,
+            _collateralAsset,
+            _debtAsset,
             repayAmount,
             seizedShares
         );
