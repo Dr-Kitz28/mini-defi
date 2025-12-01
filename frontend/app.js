@@ -274,21 +274,124 @@ async function updateNetworkDisplay() {
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
         const chainIdInt = parseInt(chainId, 16);
 
-        const networks = {
-            1: { name: 'Ethereum', class: 'mainnet' },
-            5: { name: 'Goerli', class: 'testnet' },
-            11155111: { name: 'Sepolia', class: 'testnet' },
-            137: { name: 'Polygon', class: 'mainnet' },
-            80001: { name: 'Mumbai', class: 'testnet' },
-            31337: { name: 'Hardhat', class: 'local' },
-            1337: { name: 'Local', class: 'local' }
+        // ⚠️ BLOCKED MAINNET NETWORKS - These cost real money!
+        const blockedNetworks = {
+            1: 'Ethereum Mainnet',
+            137: 'Polygon Mainnet',
+            56: 'BSC Mainnet',
+            43114: 'Avalanche Mainnet',
+            42161: 'Arbitrum One',
+            10: 'Optimism Mainnet',
+            8453: 'Base Mainnet',
+            324: 'zkSync Era',
+            250: 'Fantom Opera'
         };
 
-        const network = networks[chainIdInt] || { name: `Chain ${chainIdInt}`, class: 'unknown' };
+        // ✅ ALLOWED TEST NETWORKS (free to use)
+        const allowedNetworks = {
+            31337: { name: 'Hardhat', class: 'local' },
+            1337: { name: 'Local', class: 'local' },
+            5: { name: 'Goerli', class: 'testnet' },
+            11155111: { name: 'Sepolia', class: 'testnet' },
+            80001: { name: 'Mumbai', class: 'testnet' },
+            80002: { name: 'Amoy', class: 'testnet' }
+        };
+
+        // Check if connected to a blocked mainnet
+        if (blockedNetworks[chainIdInt]) {
+            networkName.textContent = `⛔ ${blockedNetworks[chainIdInt]}`;
+            networkBadge.className = 'network-badge mainnet-blocked';
+            
+            // Show warning modal
+            showMainnetWarning(blockedNetworks[chainIdInt], chainIdInt);
+            return;
+        }
+
+        const network = allowedNetworks[chainIdInt] || { name: `Chain ${chainIdInt}`, class: 'unknown' };
         networkName.textContent = network.name;
         networkBadge.className = `network-badge ${network.class}`;
     } catch (e) {
         networkName.textContent = 'Unknown';
+    }
+}
+
+function showMainnetWarning(networkName, chainId) {
+    // Check if warning modal already exists
+    if (document.getElementById('mainnet-warning-modal')) {
+        document.getElementById('mainnet-warning-modal').style.display = 'flex';
+        return;
+    }
+    
+    // Create warning modal
+    const modal = document.createElement('div');
+    modal.id = 'mainnet-warning-modal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'display: flex; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.9); z-index: 10000; align-items: center; justify-content: center;';
+    
+    modal.innerHTML = `
+        <div style="background: var(--card-bg, #1a1a2e); border: 2px solid #ff4444; border-radius: 16px; padding: 32px; max-width: 500px; text-align: center;">
+            <h2 style="color: #ff4444; margin-bottom: 16px; font-size: 24px;">
+                ⚠️ MAINNET DETECTED
+            </h2>
+            <p style="color: #fff; margin-bottom: 16px; font-size: 16px;">
+                You are connected to <strong style="color: #ff6b6b;">${networkName}</strong> (Chain ID: ${chainId})
+            </p>
+            <p style="color: #ffcc00; margin-bottom: 24px; font-size: 14px;">
+                <strong>This is a demo/learning project.</strong><br>
+                Transactions on mainnet cost real money and this project is NOT audited for production use.
+            </p>
+            <div style="background: #2a2a4e; padding: 16px; border-radius: 8px; margin-bottom: 24px;">
+                <p style="color: #88ff88; margin: 0; font-size: 14px;">
+                    ✅ <strong>Recommended:</strong> Switch to Hardhat Local Network<br>
+                    <span style="color: #aaa; font-size: 12px;">Chain ID: 31337 | RPC: http://127.0.0.1:8545</span>
+                </p>
+            </div>
+            <div style="display: flex; gap: 12px; justify-content: center;">
+                <button onclick="switchToHardhatNetwork()" style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: bold;">
+                    Switch to Hardhat
+                </button>
+                <button onclick="document.getElementById('mainnet-warning-modal').style.display='none'" style="background: #666; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">
+                    I Understand the Risks
+                </button>
+            </div>
+            <p style="color: #888; margin-top: 16px; font-size: 11px;">
+                The app will work but all transactions will cost real ETH/tokens.
+            </p>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+async function switchToHardhatNetwork() {
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x7A69' }], // 31337 in hex
+        });
+        document.getElementById('mainnet-warning-modal').style.display = 'none';
+    } catch (switchError) {
+        // Network not added, try to add it
+        if (switchError.code === 4902) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [{
+                        chainId: '0x7A69',
+                        chainName: 'Hardhat Local',
+                        nativeCurrency: { name: 'Ethereum', symbol: 'ETH', decimals: 18 },
+                        rpcUrls: ['http://127.0.0.1:8545'],
+                    }],
+                });
+                document.getElementById('mainnet-warning-modal').style.display = 'none';
+            } catch (addError) {
+                console.error('Failed to add Hardhat network:', addError);
+                showToast('Failed to add Hardhat network. Please add it manually.', 'error');
+            }
+        } else {
+            console.error('Failed to switch network:', switchError);
+            showToast('Failed to switch network. Please switch manually in MetaMask.', 'error');
+        }
     }
 }
 

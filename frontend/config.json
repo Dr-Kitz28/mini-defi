@@ -1,26 +1,28 @@
 {
   "defaultChainId": "31337",
-  "networks": {
+  "supportedNetworks": {
     "31337": {
+      "name": "Hardhat Local",
+      "rpcUrl": "http://127.0.0.1:8545",
+      "isTestnet": true,
+      "token": "",
+      "pool": ""
+    },
+    "1337": {
+      "name": "Local Ganache",
+      "rpcUrl": "http://127.0.0.1:7545",
+      "isTestnet": true,
       "token": "",
       "pool": ""
     }
-  }
-  ,
-  "gatewayV3": {
-    "chains": [
-      {
-        "name": "sepolia",
-        "chainId": 11155111,
-        "gateway": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-        "wrappedToken": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
-      },
-      {
-        "name": "amoy",
-        "chainId": 80002,
-        "gateway": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9",
-        "wrappedToken": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
-      }
-    ]
-  }
+  },
+  "blockedNetworks": {
+    "1": "Ethereum Mainnet",
+    "137": "Polygon Mainnet",
+    "56": "BSC Mainnet",
+    "43114": "Avalanche Mainnet",
+    "42161": "Arbitrum One",
+    "10": "Optimism Mainnet"
+  },
+  "warningMessage": "⚠️ This is a demo project. Only use with local test networks (Hardhat/Ganache). Do not connect to mainnet networks."
 }

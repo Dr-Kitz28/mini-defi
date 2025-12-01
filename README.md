@@ -1,8 +1,19 @@
 # Mini DeFi - Multi-Asset Lending Pool
 
-A production-ready decentralized lending protocol built with Hardhat/Solidity. Supports **multiple assets**, **cross-collateral borrowing**, **dynamic interest rates pegged to real-world repo rates**, and an **AI-powered RAG assistant** using Mistral-7B for user guidance.
+A decentralized lending protocol built with Hardhat/Solidity for **learning and development purposes**. Supports **multiple assets**, **cross-collateral borrowing**, **dynamic interest rates pegged to real-world repo rates**, and an **AI-powered RAG assistant** using Mistral-7B for user guidance.
 
 [![GitHub](https://img.shields.io/badge/GitHub-Dr--Kitz28%2Fmini--defi-blue?logo=github)](https://github.com/Dr-Kitz28/mini-defi)
+
+---
+
+## ⚠️ Important: Test Networks Only
+
+> **This project is designed for LOCAL TEST NETWORKS ONLY.**
+>
+> - ✅ **Supported:** Hardhat Local (localhost:8545), Ganache
+> - ⛔ **Blocked:** Ethereum Mainnet, Polygon, BSC, Arbitrum, etc.
+>
+> The frontend will display a warning and block functionality if you connect to a mainnet network. This protects you from accidentally spending real ETH/tokens on an unaudited demo project.
 
 ---
 
