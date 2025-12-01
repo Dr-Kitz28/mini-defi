@@ -93,13 +93,13 @@
      0
     ],
     "gasData": [
-     60916
+     60894
     ],
     "numberOfCalls": 1,
-    "executionGasAverage": 60916,
+    "executionGasAverage": 60894,
     "calldataGasAverage": 0,
-    "min": 60916,
-    "max": 60916
+    "min": 60894,
+    "max": 60894
    },
    "LendingPool_7609d7f6": {
     "key": "7609d7f6",
@@ -140,15 +140,15 @@
      0
     ],
     "gasData": [
-     195647,
-     195647,
-     195647
+     195625,
+     195625,
+     195625
     ],
     "numberOfCalls": 3,
-    "executionGasAverage": 195647,
+    "executionGasAverage": 195625,
     "calldataGasAverage": 0,
-    "min": 195647,
-    "max": 195647
+    "min": 195625,
+    "max": 195625
    },
    "LendingPool_e425656f": {
     "key": "e425656f",
@@ -184,18 +184,18 @@
      0
     ],
     "gasData": [
-     157199,
-     157199,
-     157199,
-     157199,
-     157199,
-     157199
+     157177,
+     157177,
+     157177,
+     157177,
+     157177,
+     157177
     ],
     "numberOfCalls": 6,
-    "executionGasAverage": 157199,
+    "executionGasAverage": 157177,
     "calldataGasAverage": 0,
-    "min": 157199,
-    "max": 157199
+    "min": 157177,
+    "max": 157177
    },
    "LendingPool_fe6bcd7c": {
     "key": "fe6bcd7c",
@@ -219,16 +219,29 @@
     "gasData": [],
     "numberOfCalls": 0
    },
-   "LendingPool_26c01303": {
-    "key": "26c01303",
+   "LendingPool_aab3f868": {
+    "key": "aab3f868",
     "isCall": false,
     "contract": "LendingPool",
     "method": "liquidate",
-    "fnSig": "liquidate(address,address,uint256)",
-    "intrinsicGas": [],
-    "callData": [],
-    "gasData": [],
-    "numberOfCalls": 0
+    "fnSig": "liquidate(address,address,address,uint256)",
+    "intrinsicGas": [
+     22368,
+     22680
+    ],
+    "callData": [
+     0,
+     0
+    ],
+    "gasData": [
+     171299,
+     188644
+    ],
+    "numberOfCalls": 2,
+    "executionGasAverage": 179972,
+    "calldataGasAverage": 0,
+    "min": 171299,
+    "max": 188644
    },
    "LendingPool_d29b3cb1": {
     "key": "d29b3cb1",
@@ -1909,20 +1922,20 @@
    {
     "name": "LendingPool",
     "gasData": [
-     2008056,
-     2008056,
-     2008056
+     2170712,
+     2170712,
+     2170712
     ],
     "callData": [
      0,
      0,
      0
     ],
-    "executionGasAverage": 2008056,
+    "executionGasAverage": 2170712,
     "calldataGasAverage": 0,
-    "min": 2008056,
-    "max": 2008056,
-    "percent": 6.7
+    "min": 2170712,
+    "max": 2170712,
+    "percent": 7.2
    },
    {
     "name": "LinearInterestRateModel",
